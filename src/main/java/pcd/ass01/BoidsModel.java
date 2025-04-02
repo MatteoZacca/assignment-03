@@ -33,7 +33,12 @@ public class BoidsModel {
         this.maxSpeed = maxSpeed;
         this.perceptionRadius = perceptionRadius;
         this.avoidRadius = avoidRadius;
-        
+
+        /* Il ciclo for riempie la lista di boids con un numero di boid specificato dalla
+        variabile nboids (1500). A ciascuno di questi viene assegnata:
+        - posizione iniziale casuale all'interno dei limiti definiti dalla larghezza e
+        dall'altezza dell'ambiente simulato
+        - velocità iniziale casuale */
     	boids = new ArrayList<>();
         for (int i = 0; i < nboids; i++) {
         	P2d pos = new P2d(-width/2 + Math.random() * width, -height/2 + Math.random() * height);

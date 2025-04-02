@@ -91,7 +91,12 @@ public class Boid {
         if (pos.y() < model.getMinY()) pos = pos.sum(new V2d(0, model.getHeight()));
         if (pos.y() >= model.getMaxY()) pos = pos.sum(new V2d(0, -model.getHeight()));
     }     
-    
+
+    /* Lo scopo di getNearbyBoids è identificare tutti i boids che si trovano entro il
+    PERCEPTION_RADIUS del boid corrente, ovvero tutti quelli che potrebbero influenzare
+    il suo comportamento (per esempio in Separation, Alignment and Cohesion).
+    A tal fine, restituisce una lista contenente tutti i Boid che rispettano i requisiti
+    richiesti. */
     private List<Boid> getNearbyBoids(BoidsModel model) {
     	var list = new ArrayList<Boid>();
         for (Boid other : model.getBoids()) {
