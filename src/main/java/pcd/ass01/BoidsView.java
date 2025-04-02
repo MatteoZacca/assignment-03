@@ -43,8 +43,16 @@ public class BoidsView implements ChangeListener {
         slidersPanel.add(alignmentSlider);
         slidersPanel.add(new JLabel("Cohesion"));
         slidersPanel.add(cohesionSlider);
-		        
+
 		cp.add(BorderLayout.SOUTH, slidersPanel);
+
+		JButton toggleSimulation = new JButton("Play");
+		toggleSimulation.addActionListener((e) -> {
+			model.toggleSimulationPause();
+			toggleSimulation.setText(model.isModelPaused() ? "Play" : "Pause");
+		});
+		        
+		cp.add(BorderLayout.NORTH, toggleSimulation);
 
 		frame.setContentPane(cp);	
 		

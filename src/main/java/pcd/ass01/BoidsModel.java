@@ -15,6 +15,7 @@ public class BoidsModel {
     private final double maxSpeed;
     private final double perceptionRadius;
     private final double avoidRadius;
+    private boolean isModelPaused = true;
 
     public BoidsModel(int nboids,  
     						double initialSeparationWeight, 
@@ -111,4 +112,13 @@ public class BoidsModel {
     public synchronized double getPerceptionRadius() {
     	return perceptionRadius;
     }
+
+    public synchronized void toggleSimulationPause() {
+        this.isModelPaused = !this.isModelPaused;
+    }
+
+    public synchronized boolean isModelPaused() {
+        return this.isModelPaused;
+    }
+
 }
