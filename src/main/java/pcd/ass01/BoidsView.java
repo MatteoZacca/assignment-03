@@ -88,8 +88,8 @@ public class BoidsView implements ChangeListener {
 		slider.setPaintLabels(true);
 		Hashtable labelTable = new Hashtable<>();
 		labelTable.put( 0, new JLabel("1500"));
-		labelTable.put( 10, new JLabel(String.valueOf(4 * 1500)));
-		labelTable.put( 20, new JLabel(String.valueOf(7 * 1500)));
+		labelTable.put( 10, new JLabel(String.valueOf(6 * BoidsSimulation.N_BOIDS)));
+		labelTable.put( 20, new JLabel(String.valueOf(11 * BoidsSimulation.N_BOIDS)));
 		slider.setLabelTable( labelTable );
 		slider.setPaintLabels(true);
 		slider.addChangeListener(this);
@@ -114,7 +114,7 @@ public class BoidsView implements ChangeListener {
 			model.setAlignmentWeight(0.1*val);
 		} else {
 			var val = boidSlider.getValue();
-			model.setBoidCount(1500 + val * 1500);
+			model.setBoidCount(BoidsSimulation.N_BOIDS + val * BoidsSimulation.N_BOIDS);
 		}
 	}
 	
