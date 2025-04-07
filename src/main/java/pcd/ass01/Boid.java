@@ -94,7 +94,7 @@ public class Boid {
 
     /* Lo scopo di getNearbyBoids è identificare tutti i boids che si trovano entro il
     PERCEPTION_RADIUS del boid corrente, ovvero tutti quelli che potrebbero influenzare
-    il suo comportamento (per esempio in Separation, Alignment and Cohesion).
+    il suo comportamento (agendo per esempio sui parametri Separation, Alignment and Cohesion).
     A tal fine, restituisce una lista contenente tutti i Boid che rispettano i requisiti
     richiesti. */
     private List<Boid> getNearbyBoids(BoidsModel model) {
