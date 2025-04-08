@@ -4,16 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BoidsModel {
-    
-    private List<Boid> boids;
-    private double separationWeight; 
-    private double alignmentWeight; 
-    private double cohesionWeight; 
+
     private final double width;
     private final double height;
     private final double maxSpeed;
     private final double perceptionRadius;
     private final double avoidRadius;
+
+    private List<Boid> boids;
+    private double separationWeight; 
+    private double alignmentWeight; 
+    private double cohesionWeight; 
     private boolean isModelPaused = true;
 
     public BoidsModel(int nboids,  
@@ -46,27 +47,27 @@ public class BoidsModel {
         generateBoids(count);
     }
     
-    public synchronized double getMinX() {
+    public double getMinX() {
     	return -width/2;
     }
 
-    public synchronized double getMaxX() {
+    public double getMaxX() {
     	return width/2;
     }
 
-    public synchronized double getMinY() {
+    public double getMinY() {
     	return -height/2;
     }
 
-    public synchronized double getMaxY() {
+    public double getMaxY() {
     	return height/2;
     }
     
-    public synchronized double getWidth() {
+    public double getWidth() {
     	return width;
     }
  
-    public synchronized double getHeight() {
+    public double getHeight() {
     	return height;
     }
 
