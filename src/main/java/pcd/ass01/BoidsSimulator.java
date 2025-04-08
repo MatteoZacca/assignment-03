@@ -46,6 +46,8 @@ public class BoidsSimulator {
         var dtElapsed = t1 - t0;
         var framratePeriod = 1000 / FRAMERATE;
 
+        // System.out.println("dtElapsed: " + dtElapsed);
+
         if (dtElapsed < framratePeriod) {
             try {
                 Thread.sleep(framratePeriod - dtElapsed);
