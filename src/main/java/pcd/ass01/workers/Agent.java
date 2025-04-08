@@ -58,49 +58,49 @@ public class Agent extends Thread {
 
     private void syncBeforeAgentsStart() {
         try {
-            log("Sincronizzo i thread con " + startUpdateBarrier);
+            log(": sincronizzo i thread con startUpdateBarrier");
             this.startUpdateBarrier.await();
-            log(startUpdateBarrier + " crolla");
+            log(": startUpdateBarrier crolla");
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
         }
     }
 
     private void readNearbyBoids() {
-        log("Inizia la fase di lettura");
+        log(": inizia la fase di lettura");
         for (var boid: myBoids) {
             boid.readNearbyBoids(this.model);
         }
-        log("Termina la fase di lettura");
+        log(": termina la fase di lettura");
     }
 
     private void syncReadingBeforeWriting() {
         try {
-            log("Sincronizzo i thread con " + readingDoneBarrier);
+            log(": sincronizzo i thread con readingDoneBarrier");
             this.readingDoneBarrier.await();
-            log(readingDoneBarrier + " crolla" );
+            log(": readingDoneBarrier crolla" );
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
         }
     }
 
     private void updateBoidsState() {
-        log("Inizia la fase di scrittura");
+        log(": inizia la fase di scrittura");
         for(var boid: myBoids) {
             boid.updateVelocity(model);
             boid.updatePos(model);
         }
-        log("Termina la fase di scrittura");
+        log(": termina la fase di scrittura");
     }
 
     private void syncBeforeAgentsEnd() {
-        log("Sincronizzo i thread con " + endUpdateBarrier);
+        log(": sincronizzo i thread con endUpdateBarrier");
         try {
             this.endUpdateBarrier.await();
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
         }
-        log(endUpdateBarrier + " crolla");
+        log(": endUpdateBarrier crolla");
     }
 
     private synchronized void log(String msg) {
