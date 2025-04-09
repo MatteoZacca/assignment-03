@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BoidsModel {
+
+    private final boolean jpf = false;
     
     private List<Boid> boids;
     private double separationWeight; 
@@ -37,36 +39,47 @@ public class BoidsModel {
         generateBoids(nboids);
     }
 
+    /* Il ciclo for riempie la lista di boids con un numero di boid specificato dalla
+        variabile nboids (1500). A ciascuno di questi viene assegnata:
+        - posizione iniziale casuale all'interno dei limiti definiti dalla larghezza e
+        dall'altezza dell'ambiente simulato
+        - velocità iniziale casuale */
+    public synchronized void generateBoids(int nboids) {
+        boids = new ArrayList<>();
+        for (int i = 0; i < nboids; i++) {
+            boids.add(createBoid(i));
+        }
+    }
 
     public synchronized List<Boid> getBoids(){
-    	return boids;
+        return boids;
     }
 
     public synchronized void setBoidCount(int count) {
         generateBoids(count);
     }
     
-    public synchronized double getMinX() {
-    	return -width/2;
+    public double getMinX() {
+        return -width/2;
     }
 
-    public synchronized double getMaxX() {
+    public double getMaxX() {
     	return width/2;
     }
 
-    public synchronized double getMinY() {
+    public double getMinY() {
     	return -height/2;
     }
 
-    public synchronized double getMaxY() {
+    public double getMaxY() {
     	return height/2;
     }
     
-    public synchronized double getWidth() {
+    public double getWidth() {
     	return width;
     }
  
-    public synchronized double getHeight() {
+    public double getHeight() {
     	return height;
     }
 
@@ -91,18 +104,18 @@ public class BoidsModel {
     }
 
     public synchronized double getAlignmentWeight() {
-    	return alignmentWeight;
+        return alignmentWeight;
     }
     
-    public synchronized double getMaxSpeed() {
-    	return maxSpeed;
+    public double getMaxSpeed() {
+        return maxSpeed;
     }
 
-    public synchronized double getAvoidRadius() {
-    	return avoidRadius;
+    public double getAvoidRadius() {
+        return avoidRadius;
     }
 
-    public synchronized double getPerceptionRadius() {
+    public double getPerceptionRadius() {
     	return perceptionRadius;
     }
 
@@ -114,21 +127,18 @@ public class BoidsModel {
         return this.isModelPaused;
     }
 
-    /* Il ciclo for riempie la lista di boids con un numero di boid specificato dalla
-        variabile nboids (1500). A ciascuno di questi viene assegnata:
-        - posizione iniziale casuale all'interno dei limiti definiti dalla larghezza e
-        dall'altezza dell'ambiente simulato
-        - velocità iniziale casuale */
-    private void generateBoids(int nboids) {
-        boids = new ArrayList<>();
-        for (int i = 0; i < nboids; i++) {
-            boids.add(createBoid(i));
-        }
-    }
-
     private Boid createBoid(int i) {
-        P2d pos = new P2d(-width / 2 + Math.random() * width, -height / 2 + Math.random() * height);
-        V2d vel = new V2d(Math.random() * maxSpeed / 2 - maxSpeed / 4, Math.random() * maxSpeed / 2 - maxSpeed / 4);
+        P2d pos;
+        V2d vel;
+        if(jpf){
+            double fakeRandom = (double) (i % 100) / 100;
+            pos = new P2d(-width/2 + fakeRandom/2 * width, -height/2 + fakeRandom/3 * height);
+            vel = new V2d(fakeRandom/4 * maxSpeed/2 - maxSpeed/4, fakeRandom/5 * maxSpeed/2 - maxSpeed/4);
+        }else{
+            pos = new P2d(-width/2 + Math.random() * width, -height/2 + Math.random() * height);
+            vel = new V2d(Math.random() * maxSpeed/2 - maxSpeed/4, Math.random() * maxSpeed/2 - maxSpeed/4);
+        }
+
         return new Boid(pos, vel);
     }
 
