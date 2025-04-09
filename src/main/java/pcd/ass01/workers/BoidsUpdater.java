@@ -31,7 +31,7 @@ public class BoidsUpdater {
     }
 
     public void update(BoidsModel model) {
-        this.agents.forEach(boid -> boid.setModel(model));
+        this.agents.forEach(it -> it.setModel(model));
 
         try {
             this.startUpdateBarrier.await(); // Quando viene premuto il tasto 'Play'
