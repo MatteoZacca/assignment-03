@@ -15,7 +15,7 @@ public class BoidsPanel extends JPanel {
     }
 
     public void setFrameRate(int framerate) {
-    	this.framerate = framerate;
+        this.framerate = framerate;
     }
     
     @Override
