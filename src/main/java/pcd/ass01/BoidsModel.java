@@ -42,10 +42,10 @@ public class BoidsModel {
 
 
     /* Il ciclo for riempie la lista di boids con un numero di boid specificato dalla
-        variabile nboids (1500). A ciascuno di questi viene assegnata:
-        - posizione iniziale casuale all'interno dei limiti definiti dalla larghezza e
-        dall'altezza dell'ambiente simulato
-        - velocità iniziale casuale */
+    variabile nboids (1500). A ciascuno di questi viene assegnata:
+    - posizione iniziale casuale all'interno dei limiti definiti dalla larghezza e
+    dall'altezza dell'ambiente simulato
+    - velocità iniziale casuale */
     public synchronized void generateBoids(int nboids) {
         boids = new ArrayList<>();
         for (int i = 0; i < nboids; i++) {

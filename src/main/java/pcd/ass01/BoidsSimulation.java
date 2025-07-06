@@ -2,7 +2,7 @@ package pcd.ass01;
 
 public class BoidsSimulation {
 
-	final static int N_BOIDS = 1500;
+	static final int N_BOIDS = 1500;
 	static final double SEPARATION_WEIGHT = 1.0;
     static final double ALIGNMENT_WEIGHT = 1.0;
     static final double COHESION_WEIGHT = 1.0;
