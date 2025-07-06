@@ -1,7 +1,7 @@
-package pcd.ass01.workers;
+package pcd.ass03.workers;
 
-import pcd.ass01.BoidsModel;
-import pcd.ass01.synchronizers.MyCyclicBarrier;
+import pcd.ass03.BoidsModel;
+import pcd.ass03.synchronizers.MyCyclicBarrier;
 
 import java.util.ArrayList;
 import java.util.List;

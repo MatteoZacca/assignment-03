@@ -1,4 +1,4 @@
-package pcd.ass01.synchronizers;
+package pcd.ass03.synchronizers;
 
 public class MyCyclicBarrier {
     private final int totalThreads;

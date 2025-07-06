@@ -1,6 +1,6 @@
-package pcd.ass01;
+package pcd.ass03;
 
-import pcd.ass01.workers.BoidsUpdater;
+import pcd.ass03.workers.BoidsUpdater;
 
 import java.util.Optional;
 
