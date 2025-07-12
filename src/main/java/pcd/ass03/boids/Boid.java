@@ -1,4 +1,4 @@
-package pcd.ass03;
+package pcd.ass03.boids;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,6 +7,9 @@ public class Boid {
 
     private P2d pos;
     private V2d vel;
+    private V2d separation;
+    private V2d alignment;
+    private V2d cohesion;
 
     private List<Boid> nearbyBoids;
 
@@ -23,24 +26,22 @@ public class Boid {
     	return vel;
     }
 
-    public void readNearbyBoids(BoidsModel model) {
-        this.nearbyBoids = getNearbyBoids(model);
+    public void calculateVelocity(BoidsModel model) {
+        /* change velocity vector according to separation, alignment, cohesion */
+        this.nearbyBoids =  getNearbyBoids(model);
+
+        this.separation = calculateSeparation(nearbyBoids, model);
+        this.alignment = calculateAlignment(nearbyBoids, model);
+        this.cohesion = calculateCohesion(nearbyBoids, model);
     }
 
-    public void updateVelocity(BoidsModel model) {
-
-    	/* change velocity vector according to separation, alignment, cohesion */
-
-    	V2d separation = calculateSeparation(nearbyBoids, model);
-    	V2d alignment = calculateAlignment(nearbyBoids, model);
-    	V2d cohesion = calculateCohesion(nearbyBoids, model);
-    	
-    	vel = vel.sum(alignment.mul(model.getAlignmentWeight()))
+    public void updateVelocity(BoidsModel model, String boidName) {
+        //System.out.println("[" + Thread.currentThread().getName() + "]: inside updateVelocity - " + boidName);
+        this.vel = vel.sum(alignment.mul(model.getAlignmentWeight()))
     			.sum(separation.mul(model.getSeparationWeight()))
     			.sum(cohesion.mul(model.getCohesionWeight()));
         
         /* Limit speed to MAX_SPEED */
-
         double speed = vel.abs();
         
         if (speed > model.getMaxSpeed()) {
@@ -48,25 +49,19 @@ public class Boid {
         }
     }    
     
-    public void updatePos(BoidsModel model) {
+    public void updatePosition(BoidsModel model, String boidName) {
+        //System.out.println("[" + Thread.currentThread().getName() + "]: inside updatePosition - " + boidName);
 
         /* Update position */
-
         pos = pos.sum(vel);
         
         /* environment wrap-around */
-        
         if (pos.x() < model.getMinX()) pos = pos.sum(new V2d(model.getWidth(), 0));
         if (pos.x() >= model.getMaxX()) pos = pos.sum(new V2d(-model.getWidth(), 0));
         if (pos.y() < model.getMinY()) pos = pos.sum(new V2d(0, model.getHeight()));
         if (pos.y() >= model.getMaxY()) pos = pos.sum(new V2d(0, -model.getHeight()));
     }     
 
-    /* Lo scopo di getNearbyBoids è identificare tutti i boids che si trovano entro il
-    PERCEPTION_RADIUS del boid corrente, ovvero tutti quelli che potrebbero influenzare
-    il suo comportamento (agendo per esempio sui parametri Separation, Alignment and Cohesion).
-    A tal fine, restituisce una lista contenente tutti i Boid che rispettano i requisiti
-    richiesti. */
     private List<Boid> getNearbyBoids(BoidsModel model) {
     	var list = new ArrayList<Boid>();
         for (Boid boid : model.getBoids()) {
