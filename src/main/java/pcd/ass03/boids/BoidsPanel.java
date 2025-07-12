@@ -1,11 +1,11 @@
-package pcd.ass01;
+package pcd.ass03.boids;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class BoidsPanel extends JPanel {
 
-	private BoidsView view; 
+	private BoidsView view;
 	private BoidsModel model;
     private int framerate;
 
@@ -15,7 +15,7 @@ public class BoidsPanel extends JPanel {
     }
 
     public void setFrameRate(int framerate) {
-    	this.framerate = framerate;
+        this.framerate = framerate;
     }
     
     @Override
