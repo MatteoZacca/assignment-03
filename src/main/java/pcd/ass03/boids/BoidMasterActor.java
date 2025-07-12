@@ -35,6 +35,7 @@ public class BoidMasterActor extends AbstractActorWithStash {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(BootMsg.class, this::onBoot)
+                .match(StartSimulationMsg.class, this::onStartSimulation)
                 .matchAny(msg -> this.stash())
                 .build();
     }
@@ -49,21 +50,20 @@ public class BoidMasterActor extends AbstractActorWithStash {
                 .build();
                 */
 
-    public Receive RunningSimulationBehaviour() {
-        return receiveBuilder()
-                .match(StartSimulationMsg.class, this::onStartSimulation)
-                .match(ContinueUpdatingSimulationMsg.class, this::onContinueUpdatingSimulation)
-                .match(PauseSimulationMsg.class, this::onPauseSimulation)
-                .match(ResetSimulationMsg.class, this::onResetSimulation)
-                .matchAny(msg -> this.stash())
-                .build();
-    }
-
     public Receive UpdateBehaviour() {
         return receiveBuilder()
                 .match(AfterCalculateVelocityMsg.class, this::onAfterCalculateVelocity)
                 .match(AfterUpdateBoidMsg.class, this::onAfterUpdateBoid)
                 .match(Tick.class, this::onTick)
+                .matchAny(msg -> this.stash())
+                .build();
+    }
+
+    public Receive RunningSimulationBehaviour() {
+        return receiveBuilder()
+                .match(ContinueUpdatingSimulationMsg.class, this::onContinueUpdatingSimulation)
+                .match(PauseSimulationMsg.class, this::onPauseSimulation)
+                .match(ResetSimulationMsg.class, this::onResetSimulation)
                 .matchAny(msg -> this.stash())
                 .build();
     }
