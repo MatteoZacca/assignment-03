@@ -132,6 +132,7 @@ public class BoidMasterActor extends AbstractActorWithStash {
             log(this.getSelf().path().name() + " received " + this.boidsActor.size() +
                     " AfterUpdateBoidMsg, now it can send update the GUI and send TickMsg");
             this.model.setBoids(new ArrayList<>(this.updatedBoids));
+            //this.model.getPrintingBoids();
             this.view.update(framerate);
 
             long dtElapsed = System.currentTimeMillis() - t0;

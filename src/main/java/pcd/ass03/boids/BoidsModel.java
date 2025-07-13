@@ -43,8 +43,19 @@ public class BoidsModel {
             P2d pos = new P2d(Math.random() * width - width / 2, Math.random() * height - height / 2);
             V2d vel = new V2d(Math.random() * maxSpeed / 2 - maxSpeed / 4, Math.random() * maxSpeed / 2 - maxSpeed / 4);
             boids.add(new Boid(pos, vel));
+            System.out.println("Boid-" + i + " ---> pos(" + pos.x() + ", " + pos.y() + ") - vel(" + vel.x() + ", " + vel.y() + ")");
         }
     }
+
+    // Debug
+    /*
+    public void getPrintingBoids() {
+        for (int i = 0; i < this.boids.size(); i++) {
+            System.out.println("Boid-" + i + " ---> pos(" + boids.get(i).getPos().x() + ", " + boids.get(i).getPos().y() +
+                    ") - vel(" + boids.get(i).getVel().x() + ", " + boids.get(i).getVel().y() + ")");
+        }
+    }
+    */
 
     public List<Boid> getBoids() {
         return this.boids;

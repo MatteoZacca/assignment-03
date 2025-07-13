@@ -53,7 +53,7 @@ public class Boid {
         //System.out.println("[" + Thread.currentThread().getName() + "]: inside updatePosition - " + boidName);
 
         /* Update position */
-        pos = pos.sum(vel);
+        this.pos = pos.sum(vel);
         
         /* environment wrap-around */
         if (pos.x() < model.getMinX()) pos = pos.sum(new V2d(model.getWidth(), 0));
