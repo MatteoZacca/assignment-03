@@ -73,7 +73,7 @@ public class BoidsView implements ChangeListener {
 				log("Pressed Play!");
 				toggleSimulation.setText("Pause");
 				resetSimulation.setEnabled(false);
-				masterActor.tell(new StartSimulationMsg(), ActorRef.noSender());
+				masterActor.tell(new RunningSimulationMsg(), ActorRef.noSender());
 			} else if (!isModelPaused()) {
 				log("Pressed Pause!");
 				toggleSimulation.setText("Play");

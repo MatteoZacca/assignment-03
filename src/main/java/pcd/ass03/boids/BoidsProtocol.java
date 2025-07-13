@@ -5,7 +5,7 @@ import java.util.List;
 public interface BoidsProtocol {
     public static record BootMsg(BoidsModel model) {};
 
-    public static record StartSimulationMsg() {};
+    public static record RunningSimulationMsg() {};
 
     public static record PauseSimulationMsg() {};
 
@@ -18,8 +18,6 @@ public interface BoidsProtocol {
     public static record BeforeUpdateBoidMsg() {};
 
     public static record AfterUpdateBoidMsg(Boid updatedBoid) {};
-
-    public static record ContinueUpdatingSimulationMsg() {};
 
     public static record UpdateSeparationWeightMsg(double weight) {};
 
