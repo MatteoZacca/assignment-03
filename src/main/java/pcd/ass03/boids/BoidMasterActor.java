@@ -155,6 +155,7 @@ public class BoidMasterActor extends AbstractActorWithStash {
     }
 
     private void onTick(Tick msg) {
+        log("[" + this.getSelf().path().name() + "] received TickMsg");
         this.getContext().become(RunningSimulationBehaviour());
         this.unstashAll();
         getSelf().tell(new RunningSimulationMsg(), ActorRef.noSender());
