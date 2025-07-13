@@ -22,7 +22,7 @@ public class BoidMasterActor extends AbstractActorWithStash {
     private List<ActorRef> boidsActor;
     private List<Boid> updatedBoids;
 
-    public BoidMasterActor(BoidsModel model, int nStartingBoidsBoids, BoidsView view) {
+    public BoidMasterActor(BoidsModel model, int nStartingBoids, BoidsView view) {
         this.model = model;
         this.nStartingBoids = nStartingBoids;
         this.view = view;
@@ -81,11 +81,11 @@ public class BoidMasterActor extends AbstractActorWithStash {
 
     /* --------------------------------- METHODS --------------------------------- */
     private void onBoot(BootMsg msg) {
-        log(this.getSelf().path().name() + " received BootMsg");
+        log("[" + this.getSelf().path().name() + "] received BootMsg");
         this.model = msg.model(); // the first BootMsg sent in BoidsSimulation wouldn't need this,
         // but every time we push the Reset button, this actor receive a BootMsg, so we have to
         // ri-initialize this.model
-        this.boidsActor.clear();
+
         List<Boid> startingBoids = model.getBoids();
 
         for (int i = 0; i < startingBoids.size(); i++) {
@@ -96,10 +96,11 @@ public class BoidMasterActor extends AbstractActorWithStash {
                     "boid-" + i);
             this.boidsActor.add(boidActor);
         }
+        log("ended");
     }
 
     private void onStartSimulation(StartSimulationMsg msg) {
-        log(this.getSelf().path().name() + " received StartSimulationMsg - nBoids: " + this.boidsActor.size());
+        log("[" + this.getSelf().path().name() + "] received StartSimulationMsg - nBoids: " + this.boidsActor.size());
         this.t0 = System.currentTimeMillis();
 
         this.countUpdate = boidsActor.size();
@@ -181,12 +182,12 @@ public class BoidMasterActor extends AbstractActorWithStash {
     }
 
     private void onPauseSimulation(PauseSimulationMsg msg) {
-        log(this.getSelf().path().name() + " received PauseSimulationMsg");
+        log("[" + this.getSelf().path().name() + "] received PauseSimulationMsg");
         this.getContext().become(pausingBehaviour());
     }
 
     private void onResetSimulation(ResetSimulationMsg msg) {
-        log(this.getSelf().path().name() + " received ResetSimulationMsg");
+        log("[" + this.getSelf().path().name() + "] received ResetSimulationMsg");
         this.model.generateBoids(msg.nStartingBoids());
         this.nStartingBoids = msg.nStartingBoids();
 
@@ -195,7 +196,10 @@ public class BoidMasterActor extends AbstractActorWithStash {
         }
 
         this.boidsActor.clear();
+        this.getContext().become(createReceive());
         this.getSelf().tell(new BootMsg(this.model), ActorRef.noSender());
+        this.unstashAll();
+
     }
 
     private void onBeforeUpdateSeparationWeight(UpdateSeparationWeightMsg msg) {
