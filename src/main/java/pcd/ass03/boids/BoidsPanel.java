@@ -31,11 +31,14 @@ public class BoidsPanel extends JPanel {
         // var yScale = h/envHeight;
 
         var boids = model.getBoids();
+        //System.out.println("BoidsPanel: boids ---> " + boids.size());
 
         g.setColor(Color.BLUE);
         for (Boid boid : boids) {
         	var x = boid.getPos().x();
+            //System.out.println(boid + "Posx: " + x);
         	var y = boid.getPos().y();
+            //System.out.println(boid + "Posy: " + y);
         	int px = (int)(w/2 + x*xScale);
         	int py = (int)(h/2 - y*xScale);
             g.fillOval(px,py, 5, 5);

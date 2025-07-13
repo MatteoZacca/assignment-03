@@ -20,12 +20,18 @@ public class BoidActor extends AbstractActor{
                 .match(BeforeUpdateBoidMsg.class, this::onBeforeUpdateBoid)
                 .match(UpdateSeparationWeightMsg.class, msg -> {
                     this.model.setSeparationWeight(msg.weight());
+                    getSender().tell(new AfterUpdateSeparationWeightMsg(), ActorRef.noSender());
+                    log(this.getSelf().path().name() + " updated separation weight: " + msg.weight());
                 })
                 .match(UpdateAlignmentWeightMsg.class, msg -> {
                     this.model.setAlignmentWeight(msg.weight());
+                    getSender().tell(new AfterUpdateAlignmentWeight(), ActorRef.noSender());
+                    log(this.getSelf().path().name() + " updated alignment weight: " + msg.weight());
                 })
                 .match(UpdateCohesionWeightMsg.class, msg -> {
                     this.model.setCohesionWeight(msg.weight());
+                    getSender().tell(new AfterUpdateCohesionWeight(), ActorRef.noSender());
+                    log(this.getSelf().path().name() + " updated cohesion weight: " + msg.weight());
                 })
                 .build();
     }
@@ -35,7 +41,6 @@ public class BoidActor extends AbstractActor{
         boid.calculateVelocity(model);
         getSender().tell(new AfterCalculateVelocityMsg(), ActorRef.noSender());
     }
-
 
     /* 1. Akka receives a BeforeUpdateBoidMsg
     2. it picks a thread from the dispatcher and uses it to call onBeforeUpdateBoid

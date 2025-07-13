@@ -23,9 +23,15 @@ public interface BoidsProtocol {
 
     public static record UpdateSeparationWeightMsg(double weight) {};
 
+    public static record AfterUpdateSeparationWeightMsg() {};
+
     public static record UpdateAlignmentWeightMsg(double weight) {};
 
+    public static record AfterUpdateAlignmentWeight() {};
+
     public static record UpdateCohesionWeightMsg(double weight) {};
+
+    public static record AfterUpdateCohesionWeight() {};
 
     public static record Tick() {};
 

@@ -149,7 +149,7 @@ public class BoidsView implements ChangeListener {
 	}
 
 	private JSlider makeSlider() {
-		var slider = new JSlider(JSlider.HORIZONTAL, 1, 20, 1);
+		var slider = new JSlider(JSlider.HORIZONTAL, 1, 20, 10);
 		slider.setMajorTickSpacing(20);
 		slider.setMinorTickSpacing(1);
 		slider.setPaintTicks(true);

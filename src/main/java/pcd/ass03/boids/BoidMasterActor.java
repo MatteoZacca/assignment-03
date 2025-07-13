@@ -18,6 +18,7 @@ public class BoidMasterActor extends AbstractActorWithStash {
 
     private int nStartingBoids;
     private int countUpdate;
+    private int countUpdateWeight;
     private List<ActorRef> boidsActor;
     private List<Boid> updatedBoids;
 
@@ -29,7 +30,7 @@ public class BoidMasterActor extends AbstractActorWithStash {
         this.updatedBoids = new ArrayList<>();
     }
 
-    /* -------------------------- BEHAVIOURS -------------------------- */
+    /* --------------------------------- BEHAVIOURS --------------------------------- */
 
     @Override
     public Receive createReceive() {
@@ -39,16 +40,6 @@ public class BoidMasterActor extends AbstractActorWithStash {
                 .matchAny(msg -> this.stash())
                 .build();
     }
-                /*
-                .match(PauseSimulationMsg.class, this::onPauseSimulation)
-                .match(ResetSimulationMsg.class, this::onResetSimulation)
-                .match(AfterCalculateVelocityMsg.class, this::onAfterCalculateVelocity)
-                .match(AfterUpdateBoidMsg.class, this::onAfterUpdateBoid)
-                .match(UpdateSeparationWeightMsg.class,this::onUpdateSeparationWeight)
-                .match(UpdateAlignmentWeightMsg.class, this::onUpdateAlignmentWeight)
-                .match(UpdateCohesionWeightMsg.class, this::onUpdateCohesionWeight)
-                .build();
-                */
 
     public Receive UpdateBehaviour() {
         return receiveBuilder()
@@ -64,7 +55,19 @@ public class BoidMasterActor extends AbstractActorWithStash {
                 .match(ContinueUpdatingSimulationMsg.class, this::onContinueUpdatingSimulation)
                 .match(PauseSimulationMsg.class, this::onPauseSimulation)
                 .match(ResetSimulationMsg.class, this::onResetSimulation)
+                .match(UpdateSeparationWeightMsg.class, this::onBeforeUpdateSeparationWeight)
+                .match(UpdateAlignmentWeightMsg.class, this::onBeforeUpdateAlignmentWeight)
+                .match(UpdateCohesionWeightMsg.class, this::onBeforeUpdateCohesionWeight)
                 .matchAny(msg -> this.stash())
+                .build();
+    }
+
+    public Receive UpdateWeightBehaviour() {
+        return receiveBuilder()
+                .match(AfterUpdateSeparationWeightMsg.class, this::onAfterUpdateSeparationWeight)
+                .match(AfterUpdateAlignmentWeight.class, this::onAfterUpdateAlignmentWeight)
+                .match(AfterUpdateCohesionWeight.class, this::onAfterUpdateCohesionWeight)
+                .matchAny(msg -> stash())
                 .build();
     }
 
@@ -72,10 +75,11 @@ public class BoidMasterActor extends AbstractActorWithStash {
         return receiveBuilder()
                 .match(StartSimulationMsg.class, this::onStartSimulation)
                 .match(ResetSimulationMsg.class, this::onResetSimulation)
+                .matchAny(msg -> stash())
                 .build();
     }
 
-    /* -------------------------- METHODS -------------------------- */
+    /* --------------------------------- METHODS --------------------------------- */
     private void onBoot(BootMsg msg) {
         log(this.getSelf().path().name() + " received BootMsg");
         this.model = msg.model(); // the first BootMsg sent in BoidsSimulation wouldn't need this,
@@ -154,13 +158,14 @@ public class BoidMasterActor extends AbstractActorWithStash {
     }
 
     private void onTick(Tick msg) {
+        log("[" + this.getSelf().path().name() + "] received TickMsg");
         this.getContext().become(RunningSimulationBehaviour());
         this.unstashAll();
         getSelf().tell(new ContinueUpdatingSimulationMsg(), ActorRef.noSender());
     }
 
     private void onContinueUpdatingSimulation(ContinueUpdatingSimulationMsg msg) {
-        log(this.getSelf().path().name() + " received ContinueUpdatingSimulationMsg. ");
+        log(this.getSelf().path().name() + " received ContinueUpdatingSimulationMsg");
         this.t0 = System.currentTimeMillis();
 
         this.countUpdate = boidsActor.size();
@@ -192,27 +197,81 @@ public class BoidMasterActor extends AbstractActorWithStash {
         this.getSelf().tell(new BootMsg(this.model), ActorRef.noSender());
     }
 
-    private void onUpdateSeparationWeight(UpdateSeparationWeightMsg msg) {
-        log("Separation Weight: " + msg.weight());
-        model.setSeparationWeight(msg.weight());
+    private void onBeforeUpdateSeparationWeight(UpdateSeparationWeightMsg msg) {
+        log("[" + this.getSelf().path().name() + "] received UpdateSeparationWeightMsg ---> " + String.format("%.1f", msg.weight()));
+
+        this.countUpdateWeight = this.boidsActor.size();
+        this.model.setSeparationWeight(msg.weight());
+
         for (ActorRef boid : boidsActor) {
-            boid.tell(new UpdateSeparationWeightMsg(msg.weight()), ActorRef.noSender());
+            boid.tell(new UpdateSeparationWeightMsg(msg.weight()), getSelf());
+        }
+
+        this.getContext().become(UpdateWeightBehaviour());
+        this.unstashAll();
+    }
+
+    private void onAfterUpdateSeparationWeight(AfterUpdateSeparationWeightMsg msg) {
+        this.countUpdateWeight--;
+        if(this.countUpdateWeight == 0) {
+            log("[" + this.getSelf().path().name() + "] received " + this.boidsActor.size() +
+                    " AfterUpdateSeparationWeightMsg");
+
+            this.countUpdateWeight = this.boidsActor.size();
+            this.getContext().become(RunningSimulationBehaviour());
+            this.unstashAll();
         }
     }
 
-    private void onUpdateAlignmentWeight(UpdateAlignmentWeightMsg msg) {
-        log("Alignment Weight: " + msg.weight());
-        model.setAlignmentWeight(msg.weight());
+    private void onBeforeUpdateAlignmentWeight(UpdateAlignmentWeightMsg msg) {
+        log("[" + this.getSelf().path().name() + "] received UpdateAlignmentWeightMsg ---> " + String.format("%.1f", msg.weight()));
+
+        this.countUpdateWeight = this.boidsActor.size();
+        this.model.setAlignmentWeight(msg.weight());
+
         for (ActorRef boid : boidsActor) {
-            boid.tell(new UpdateAlignmentWeightMsg(msg.weight()), ActorRef.noSender());
+            boid.tell(new UpdateAlignmentWeightMsg(msg.weight()), getSelf());
+        }
+
+        this.getContext().become(UpdateWeightBehaviour());
+        this.unstashAll();
+    }
+
+    private void onAfterUpdateAlignmentWeight(AfterUpdateAlignmentWeight msg) {
+        this.countUpdateWeight--;
+        if (this.countUpdateWeight == 0) {
+            log("[" + this.getSelf().path().name() + "] received " + this.boidsActor.size() +
+                    " AfterUpdateAlignmentWeightMsg");
+
+            this.countUpdateWeight = this.boidsActor.size();
+            this.getContext().become(RunningSimulationBehaviour());
+            this.unstashAll();
         }
     }
 
-    private void onUpdateCohesionWeight(UpdateCohesionWeightMsg msg) {
-        log("Cohesion Weight: " + msg.weight());
-        model.setCohesionWeight(msg.weight());
+    private void onBeforeUpdateCohesionWeight(UpdateCohesionWeightMsg msg) {
+        log("[" + this.getSelf().path().name() + "] received UpdateCohesionWeightMsg ---> " + String.format("%.1f", msg.weight()));
+
+        this.countUpdateWeight = this.boidsActor.size();
+        this.model.setCohesionWeight(msg.weight());
+
         for (ActorRef boid : boidsActor) {
-            boid.tell(new UpdateCohesionWeightMsg(msg.weight()), ActorRef.noSender());
+            boid.tell(new UpdateCohesionWeightMsg(msg.weight()), getSelf());
+        }
+
+        this.getContext().become(UpdateWeightBehaviour());
+        this.unstashAll();
+    }
+
+    private void onAfterUpdateCohesionWeight(AfterUpdateCohesionWeight msg) {
+        this.countUpdateWeight--;
+        if (this.countUpdateWeight == 0) {
+            log("[" + this.getSelf().path().name() + "] received " + this.boidsActor.size() +
+                    " AfterUpdateCohesionWeightMsg");
+
+            this.countUpdateWeight = this.boidsActor.size();
+            this.getContext().become(RunningSimulationBehaviour());
+            this.unstashAll();
         }
     }
 
