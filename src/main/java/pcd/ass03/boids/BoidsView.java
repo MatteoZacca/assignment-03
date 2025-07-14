@@ -122,9 +122,9 @@ public class BoidsView implements ChangeListener {
 			masterActor.tell(new UpdateAlignmentWeightMsg(0.1 * weight), ActorRef.noSender());
 			//model.setAlignmentWeight(0.1*val);
 		} else {
-			var weight = boidSlider.getValue();
-			log("" + model.getBoids().size());
-			model.setBoidsNumber(weight * this.nStartingBoids);
+			var boidSliderValue = boidSlider.getValue() * nStartingBoids;
+			log("Boids slider changed to: " + boidSliderValue);
+			masterActor.tell(new ResetSimulationMsg(boidSliderValue), ActorRef.noSender());
 		}
 	}
 

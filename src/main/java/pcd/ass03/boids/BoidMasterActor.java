@@ -60,6 +60,8 @@ public class BoidMasterActor extends AbstractActorWithStash {
         return receiveBuilder()
                 .match(ContinueUpdatingSimulationMsg.class, this::onContinueUpdatingSimulation)
                 .match(PauseSimulationMsg.class, this::onPauseSimulation)
+                .match(ResetSimulationMsg.class, this::onResetSimulation) // that's only for ResetSimulationMsg received
+                // from boidsSlider
                 .match(UpdateSeparationWeightMsg.class, this::onBeforeUpdateSeparationWeight)
                 .match(UpdateAlignmentWeightMsg.class, this::onBeforeUpdateAlignmentWeight)
                 .match(UpdateCohesionWeightMsg.class, this::onBeforeUpdateCohesionWeight)
