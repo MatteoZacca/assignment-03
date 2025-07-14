@@ -1,5 +1,7 @@
 package pcd.ass03.boids;
 
+import akka.actor.ActorRef;
+
 import java.util.List;
 
 public interface BoidsProtocol {
@@ -34,6 +36,17 @@ public interface BoidsProtocol {
     public static record AfterUpdateCohesionWeight() {};
 
     public static record Tick() {};
+
+    /* --------------------------------- BoidsViewActor receives: --------------------------------- */
+    public static record SetMasterActorMsg(ActorRef boidMasterActor) {};
+
+    public static record UpdateViewMsg(int framerate) {};
+
+    public static record GetWidthMsg() {};
+
+    public static record GetHeightMsg() {};
+
+
 
 
 

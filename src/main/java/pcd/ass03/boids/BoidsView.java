@@ -175,6 +175,7 @@ public class BoidsView implements ChangeListener {
 		slider.setLabelTable( labelTable );
 		slider.setPaintLabels(true);
         slider.addChangeListener(this);
+
 		return slider;
 	}
 
@@ -193,7 +194,6 @@ public class BoidsView implements ChangeListener {
 		}
 		return true;
 	}
-
 
 	private static void log(String msg) {
 		System.out.println("[" + Thread.currentThread().getName() + "]: " + msg);

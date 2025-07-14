@@ -32,6 +32,12 @@ public class BoidsSimulation {
 
         ActorSystem system  = ActorSystem.create("boids-system");
 
+        ActorRef boidsView = system.actorOf(Props.create(
+                BoidsViewActor.class,
+                () -> new BoidsViewActor(model, SCREEN_WIDTH, SCREEN_HEIGHT, N_BOIDS)),
+                "boids-view-actor"
+        );
+
         BoidsView view = new BoidsView(model, SCREEN_WIDTH, SCREEN_HEIGHT, N_BOIDS);
 
         ActorRef master = system.actorOf(Props.create(
@@ -40,7 +46,7 @@ public class BoidsSimulation {
                 "boid-master-actor"
         );
 
-        view.setMasterActor(master);
+        boidsView.tell(new SetMasterActorMsg(master), ActorRef.noSender());
         master.tell(new BootMsg(model), ActorRef.noSender());
     }
 
