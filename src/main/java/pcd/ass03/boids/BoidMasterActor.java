@@ -37,7 +37,10 @@ public class BoidMasterActor extends AbstractActorWithStash {
         return receiveBuilder()
                 .match(BootMsg.class, this::onBoot)
                 .match(StartSimulationMsg.class, this::onStartSimulation)
-                .matchAny(msg -> this.stash())
+                .matchAny(msg -> {
+                    //log("Unhandled (will stash): " + msg.getClass());
+                    this.stash();
+                })
                 .build();
     }
 
@@ -46,7 +49,10 @@ public class BoidMasterActor extends AbstractActorWithStash {
                 .match(AfterCalculateVelocityMsg.class, this::onAfterCalculateVelocity)
                 .match(AfterUpdateBoidMsg.class, this::onAfterUpdateBoid)
                 .match(Tick.class, this::onTick)
-                .matchAny(msg -> this.stash())
+                .matchAny(msg -> {
+                    //log("Unhandled (will stash): " + msg.getClass());
+                    this.stash();
+                })
                 .build();
     }
 
@@ -54,11 +60,13 @@ public class BoidMasterActor extends AbstractActorWithStash {
         return receiveBuilder()
                 .match(ContinueUpdatingSimulationMsg.class, this::onContinueUpdatingSimulation)
                 .match(PauseSimulationMsg.class, this::onPauseSimulation)
-                .match(ResetSimulationMsg.class, this::onResetSimulation)
                 .match(UpdateSeparationWeightMsg.class, this::onBeforeUpdateSeparationWeight)
                 .match(UpdateAlignmentWeightMsg.class, this::onBeforeUpdateAlignmentWeight)
                 .match(UpdateCohesionWeightMsg.class, this::onBeforeUpdateCohesionWeight)
-                .matchAny(msg -> this.stash())
+                .matchAny(msg -> {
+                    //log("Unhandled (will stash): " + msg.getClass());
+                    this.stash();
+                })
                 .build();
     }
 
@@ -67,7 +75,10 @@ public class BoidMasterActor extends AbstractActorWithStash {
                 .match(AfterUpdateSeparationWeightMsg.class, this::onAfterUpdateSeparationWeight)
                 .match(AfterUpdateAlignmentWeight.class, this::onAfterUpdateAlignmentWeight)
                 .match(AfterUpdateCohesionWeight.class, this::onAfterUpdateCohesionWeight)
-                .matchAny(msg -> stash())
+                .matchAny(msg -> {
+                            //log("Unhandled (will stash): " + msg.getClass());
+                            stash();
+                        })
                 .build();
     }
 
@@ -75,7 +86,10 @@ public class BoidMasterActor extends AbstractActorWithStash {
         return receiveBuilder()
                 .match(StartSimulationMsg.class, this::onStartSimulation)
                 .match(ResetSimulationMsg.class, this::onResetSimulation)
-                .matchAny(msg -> stash())
+                .matchAny(msg -> {
+                    //log("Unhandled (will stash): " + msg.getClass());
+                    stash();
+                })
                 .build();
     }
 
@@ -93,10 +107,10 @@ public class BoidMasterActor extends AbstractActorWithStash {
             ActorRef boidActor = getContext().actorOf(Props.create(
                     BoidActor.class,
                     () -> new BoidActor(boid, model)),
-                    "boid-" + i);
+                    "boid-" + i + "-" + System.currentTimeMillis()); // in this way i create a unique name
+            // for every actor, and I won't have problem inside onResetSimulation
             this.boidsActor.add(boidActor);
         }
-        log("ended");
     }
 
     private void onStartSimulation(StartSimulationMsg msg) {
@@ -283,6 +297,5 @@ public class BoidMasterActor extends AbstractActorWithStash {
     private static void log(String print) {
         System.out.println("[" + Thread.currentThread().getName() + "]: " + print);
     }
-
 
 }

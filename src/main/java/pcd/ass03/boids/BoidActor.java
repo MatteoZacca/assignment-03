@@ -10,7 +10,7 @@ public class BoidActor extends AbstractActor{
     private BoidsModel model;
 
     public BoidActor(Boid boid, BoidsModel model) {
-        this.boid = boid;
+        this.boid = new Boid(boid.getPos(), boid.getVel());
         this.model = model;
     }
 
