@@ -15,7 +15,8 @@ public class BoidsView implements ChangeListener {
 	private JFrame frame;
 	private BoidsPanel boidsPanel;
 	private BoidsModel model;
-	private JSlider cohesionSlider, separationSlider, alignmentSlider, boidSlider;
+	private JSlider cohesionSlider, separationSlider, alignmentSlider;
+	private JTextField nBoidsTextFields;
 	private int width, height;
 	private int nStartingBoids;
 	private boolean modelPaused;
@@ -46,7 +47,7 @@ public class BoidsView implements ChangeListener {
 		this.separationSlider = makeSlider();
         this.alignmentSlider = makeSlider();
 		this.cohesionSlider = makeSlider();
-		this.boidSlider = makeBoidSlider();
+		this.nBoidsTextFields = makeTextField();
         
         slidersPanel.add(new JLabel("Separation"));
         slidersPanel.add(separationSlider);
@@ -55,7 +56,7 @@ public class BoidsView implements ChangeListener {
         slidersPanel.add(new JLabel("Cohesion"));
         slidersPanel.add(cohesionSlider);
 		slidersPanel.add(new JLabel("N°. Boids"));
-		slidersPanel.add(boidSlider);
+		slidersPanel.add(nBoidsTextFields);
 
 		cp.add(BorderLayout.SOUTH, slidersPanel);
 
@@ -90,7 +91,24 @@ public class BoidsView implements ChangeListener {
 			toggleSimulation.setText("Play");
 			resetSimulation.setEnabled(false);
 			masterActor.tell(new ResetSimulationMsg(this.nStartingBoids), ActorRef.noSender());
-		} );
+		});
+
+		// Listener Boids textField
+		nBoidsTextFields.addActionListener((e) -> {
+			String text = nBoidsTextFields.getText();
+			if (isNumber(text)) {
+				nBoidsTextFields.setForeground(Color.GREEN);
+				this.nStartingBoids = Integer.parseInt(text);
+				log("Changed boids number: " + this.nStartingBoids);
+				setStatusSimulation(true);
+				toggleSimulation.setText("Play");
+				resetSimulation.setEnabled(false);
+				masterActor.tell(new ResetSimulationMsg(this.nStartingBoids), ActorRef.noSender());
+			} else {
+				nBoidsTextFields.setForeground(Color.RED);
+				nBoidsTextFields.setText("Please enter an integer.");
+			}
+		});
 
 		cp.add(BorderLayout.NORTH, buttonPanel);
 
@@ -121,10 +139,6 @@ public class BoidsView implements ChangeListener {
 			log("Alignment Weight: " + String.format("%.1f", 0.1 * weight));
 			masterActor.tell(new UpdateAlignmentWeightMsg(0.1 * weight), ActorRef.noSender());
 			//model.setAlignmentWeight(0.1*val);
-		} else {
-			var boidSliderValue = boidSlider.getValue() * nStartingBoids;
-			log("Boids slider changed to: " + boidSliderValue);
-			masterActor.tell(new ResetSimulationMsg(boidSliderValue), ActorRef.noSender());
 		}
 	}
 
@@ -164,21 +178,22 @@ public class BoidsView implements ChangeListener {
 		return slider;
 	}
 
-	private JSlider makeBoidSlider() {
-		var slider = new JSlider(JSlider.HORIZONTAL, 1, 10, 1);
-		slider.setMajorTickSpacing(10);
-		slider.setMinorTickSpacing(1);
-		slider.setPaintTicks(true);
-		slider.setPaintLabels(true);
-		Hashtable labelTable = new Hashtable<>();
-		labelTable.put( 1, new JLabel("1500"));
-		labelTable.put( 5, new JLabel(String.valueOf(5 * this.nStartingBoids)));
-		labelTable.put( 10, new JLabel(String.valueOf(10 * this.nStartingBoids)));
-		slider.setLabelTable( labelTable );
-		slider.setPaintLabels(true);
-		slider.addChangeListener(this);
-		return slider;
+	private JTextField makeTextField() {
+		this.nBoidsTextFields = new JTextField(String.valueOf(this.nStartingBoids));
+		this.nBoidsTextFields.setForeground(Color.BLUE);
+
+		return this.nBoidsTextFields;
 	}
+
+	private boolean isNumber(String text) {
+		try {
+			Integer.parseInt(text);
+		} catch (NumberFormatException ex) {
+			return false;
+		}
+		return true;
+	}
+
 
 	private static void log(String msg) {
 		System.out.println("[" + Thread.currentThread().getName() + "]: " + msg);

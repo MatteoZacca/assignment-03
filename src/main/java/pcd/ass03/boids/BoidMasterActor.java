@@ -204,8 +204,8 @@ public class BoidMasterActor extends AbstractActorWithStash {
 
     private void onResetSimulation(ResetSimulationMsg msg) {
         log("[" + this.getSelf().path().name() + "] received ResetSimulationMsg");
-        this.model.generateBoids(msg.nStartingBoids());
         this.nStartingBoids = msg.nStartingBoids();
+        this.model.generateBoids(nStartingBoids);
 
         for (ActorRef boid : boidsActor) {
             boid.tell(PoisonPill.getInstance(), ActorRef.noSender());
