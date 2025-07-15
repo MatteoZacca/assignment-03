@@ -37,14 +37,14 @@ public interface BoidsProtocol {
 
     public static record Tick() {};
 
-    /* --------------------------------- BoidsViewActor receives: --------------------------------- */
+    /* --------------------------------- BoidsViewActor handles: --------------------------------- */
     public static record SetMasterActorMsg(ActorRef boidMasterActor) {};
 
     public static record UpdateViewMsg(int framerate) {};
 
-    public static record GetWidthMsg() {};
+    public static record GetWidthMsg(int width) {};
 
-    public static record GetHeightMsg() {};
+    public static record GetHeightMsg(int height) {};
 
 
 

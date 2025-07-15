@@ -4,10 +4,12 @@ import akka.actor.*;
 import pcd.ass03.boids.BoidsProtocol.*;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.util.Hashtable;
 
-public class BoidsViewActor extends AbstractActor {
+public class BoidsViewActor extends AbstractActor implements ChangeListener{
 
     private JFrame frame;
     private BoidsPanel boidsPanel;
@@ -28,9 +30,10 @@ public class BoidsViewActor extends AbstractActor {
         return receiveBuilder()
                 .match(SetMasterActorMsg.class, msg -> this.masterActor = msg.boidMasterActor())
                 .match(UpdateViewMsg.class, this::onUpdateView)
+                .match(GetWidthMsg.class, this::onGetWidth)
+                .match(GetHeightMsg.class, this::onGetHeight)
                 .build();
     }
-
 
     private void initUI(BoidsModel model, int width, int height, int nBoids) {
         this.model = model;
@@ -67,6 +70,8 @@ public class BoidsViewActor extends AbstractActor {
         slidersPanel.add(cohesionSlider);
         slidersPanel.add(new JLabel("N°. Boids"));
         slidersPanel.add(nBoidsTextField);
+
+        cp.add(BorderLayout.SOUTH, slidersPanel);
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new GridLayout(1, 2));
@@ -125,11 +130,45 @@ public class BoidsViewActor extends AbstractActor {
         frame.setVisible(true);
     }
 
+    /* --------------------------------- Methods who handle msgs --------------------------------- */
+
     private void onUpdateView(UpdateViewMsg msg) {
         SwingUtilities.invokeLater(() -> {
             boidsPanel.setFrameRate(msg.framerate());
             boidsPanel.repaint();
         });
+    }
+
+    private void onGetWidth(GetWidthMsg msg) {
+        log("[" + this.getSelf().path().name() + "] received GetWidthMsg");
+        getSender().tell(new GetWidthMsg(this.width), ActorRef.noSender());
+    }
+
+    private void onGetHeight(GetHeightMsg msg) {
+        log("[" + this.getSelf().path().name() + "] received GetHeightMsg");
+        getSender().tell(new GetHeightMsg(this.height), ActorRef.noSender());
+    }
+
+    /* --------------------------------- Internal Methods --------------------------------- */
+
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        if (e.getSource() == separationSlider) {
+            var weight = separationSlider.getValue();
+            log("Separation Weight: " + String.format("%.1f", 0.1 * weight));
+            masterActor.tell(new UpdateSeparationWeightMsg(0.1 * weight), ActorRef.noSender());
+            //model.setSeparationWeight(0.1*val);
+        } else if (e.getSource() == cohesionSlider) {
+            var weight = cohesionSlider.getValue();
+            log("Cohesion Weight: " + String.format("%.1f", 0.1 * weight));
+            masterActor.tell(new UpdateCohesionWeightMsg(0.1 * weight), ActorRef.noSender());
+            //model.setCohesionWeight(0.1*val);
+        } else if (e.getSource() == alignmentSlider) {
+            var weight = alignmentSlider.getValue();
+            log("Alignment Weight: " + String.format("%.1f", 0.1 * weight));
+            masterActor.tell(new UpdateAlignmentWeightMsg(0.1 * weight), ActorRef.noSender());
+            //model.setAlignmentWeight(0.1*val);
+        }
     }
 
     private void setStatusSimulation(boolean status) {
