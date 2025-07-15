@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Hashtable;
 
 public class BoidsView implements ChangeListener {
@@ -23,38 +24,86 @@ public class BoidsView implements ChangeListener {
 	private ActorRef masterActor;
 	
 	public BoidsView(BoidsModel model, int width, int height, int nBoids) {
+		SwingUtilities.invokeLater(() -> {
+			this.initUI(model, width, height, nBoids);
+		});
+	}
+
+	public void update(int frameRate) {
+		try {
+			SwingUtilities.invokeAndWait(() -> {
+				boidsPanel.setFrameRate(frameRate);
+				boidsPanel.repaint();
+			});
+		} catch (InterruptedException ex) {
+			throw new RuntimeException(ex);
+		} catch (InvocationTargetException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
+	@Override
+	public void stateChanged(ChangeEvent e) {
+		if (e.getSource() == separationSlider) {
+			var weight = separationSlider.getValue();
+			log("Separation Weight: " + String.format("%.1f", 0.1 * weight));
+			masterActor.tell(new UpdateSeparationWeightMsg(0.1 * weight), ActorRef.noSender());
+		} else if (e.getSource() == cohesionSlider) {
+			var weight = cohesionSlider.getValue();
+			log("Cohesion Weight: " + String.format("%.1f", 0.1 * weight));
+			masterActor.tell(new UpdateCohesionWeightMsg(0.1 * weight), ActorRef.noSender());
+		} else if (e.getSource() == alignmentSlider) {
+			var weight = alignmentSlider.getValue();
+			log("Alignment Weight: " + String.format("%.1f", 0.1 * weight));
+			masterActor.tell(new UpdateAlignmentWeightMsg(0.1 * weight), ActorRef.noSender());
+		}
+	}
+
+	public void setMasterActor(ActorRef masterActor) {
+		this.masterActor = masterActor;
+	}
+
+	public int getWidth() {
+		return width;
+	}
+
+	public int getHeight() {
+		return height;
+	}
+
+	private void initUI(BoidsModel model, int width, int height, int nBoids) {
 		this.model = model;
 		this.width = width;
 		this.height = height;
 		this.nStartingBoids = nBoids;
 		this.modelPaused = true;
-		
+
 		this.frame = new JFrame("Boids Simulation");
-        this.frame.setSize(width, height);
-        this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.frame.setSize(width, height);
+		this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		JPanel cp = new JPanel();
 		LayoutManager layout = new BorderLayout();
 		cp.setLayout(layout);
 
-        this.boidsPanel = new BoidsPanel(this, this.model);
+		this.boidsPanel = new BoidsPanel(this, this.model);
 		cp.add(BorderLayout.CENTER, this.boidsPanel);
 
-        JPanel slidersPanel = new JPanel();
+		JPanel slidersPanel = new JPanel();
 
 		slidersPanel.setLayout(new GridLayout(2, 2));
 
 		this.separationSlider = makeSlider();
-        this.alignmentSlider = makeSlider();
+		this.alignmentSlider = makeSlider();
 		this.cohesionSlider = makeSlider();
 		this.nBoidsTextFields = makeTextField();
-        
-        slidersPanel.add(new JLabel("Separation"));
-        slidersPanel.add(separationSlider);
-        slidersPanel.add(new JLabel("Alignment"));
-        slidersPanel.add(alignmentSlider);
-        slidersPanel.add(new JLabel("Cohesion"));
-        slidersPanel.add(cohesionSlider);
+
+		slidersPanel.add(new JLabel("Separation"));
+		slidersPanel.add(separationSlider);
+		slidersPanel.add(new JLabel("Alignment"));
+		slidersPanel.add(alignmentSlider);
+		slidersPanel.add(new JLabel("Cohesion"));
+		slidersPanel.add(cohesionSlider);
 		slidersPanel.add(new JLabel("N°. Boids"));
 		slidersPanel.add(nBoidsTextFields);
 
@@ -112,54 +161,9 @@ public class BoidsView implements ChangeListener {
 
 		cp.add(BorderLayout.NORTH, buttonPanel);
 
-		frame.setContentPane(cp);	
-		
-        frame.setVisible(true);
-	}
+		frame.setContentPane(cp);
 
-	public void update(int frameRate) {
-		boidsPanel.setFrameRate(frameRate);
-		boidsPanel.repaint();
-	}
-
-	@Override
-	public void stateChanged(ChangeEvent e) {
-		if (e.getSource() == separationSlider) {
-			var weight = separationSlider.getValue();
-			log("Separation Weight: " + String.format("%.1f", 0.1 * weight));
-			masterActor.tell(new UpdateSeparationWeightMsg(0.1 * weight), ActorRef.noSender());
-			//model.setSeparationWeight(0.1*val);
-		} else if (e.getSource() == cohesionSlider) {
-			var weight = cohesionSlider.getValue();
-			log("Cohesion Weight: " + String.format("%.1f", 0.1 * weight));
-			masterActor.tell(new UpdateCohesionWeightMsg(0.1 * weight), ActorRef.noSender());
-			//model.setCohesionWeight(0.1*val);
-		} else if (e.getSource() == alignmentSlider) {
-			var weight = alignmentSlider.getValue();
-			log("Alignment Weight: " + String.format("%.1f", 0.1 * weight));
-			masterActor.tell(new UpdateAlignmentWeightMsg(0.1 * weight), ActorRef.noSender());
-			//model.setAlignmentWeight(0.1*val);
-		}
-	}
-
-	public void setMasterActor(ActorRef masterActor) {
-		this.masterActor = masterActor;
-	}
-
-	private void setStatusSimulation(boolean status) {
-		this.modelPaused = status;
-	}
-
-	private boolean isModelPaused() {
-		return this.modelPaused;
-	}
-
-	public int getWidth() {
-		return width;
-	}
-
-	public int getHeight() {
-		return height;
+		frame.setVisible(true);
 	}
 
 	private JSlider makeSlider() {
@@ -174,7 +178,7 @@ public class BoidsView implements ChangeListener {
 		labelTable.put(20, new JLabel("2.0"));
 		slider.setLabelTable( labelTable );
 		slider.setPaintLabels(true);
-        slider.addChangeListener(this);
+		slider.addChangeListener(this);
 		return slider;
 	}
 
@@ -194,6 +198,13 @@ public class BoidsView implements ChangeListener {
 		return true;
 	}
 
+	private void setStatusSimulation(boolean status) {
+		this.modelPaused = status;
+	}
+
+	private boolean isModelPaused() {
+		return this.modelPaused;
+	}
 
 	private static void log(String msg) {
 		System.out.println("[" + Thread.currentThread().getName() + "]: " + msg);

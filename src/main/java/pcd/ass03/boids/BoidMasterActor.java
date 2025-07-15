@@ -37,6 +37,8 @@ public class BoidMasterActor extends AbstractActorWithStash {
         return receiveBuilder()
                 .match(BootMsg.class, this::onBoot)
                 .match(StartSimulationMsg.class, this::onStartSimulation)
+                .match(ResetSimulationMsg.class, this::onResetSimulation) // This enables processing two successive
+                // updates to nBoids through the JTextField without needing to press the 'Play' button in between.
                 .matchAny(msg -> {
                     //log("Unhandled (will stash): " + msg.getClass());
                     this.stash();
