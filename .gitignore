@@ -30,3 +30,6 @@ replay_pid*
 # IDE config
 .vscode/
 .idea/
+
+# Internal
+repomix-output.xml
