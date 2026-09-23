@@ -30,16 +30,10 @@ public class BoidsView implements ChangeListener {
 	}
 
 	public void update(int frameRate) {
-		try {
-			SwingUtilities.invokeAndWait(() -> {
-				boidsPanel.setFrameRate(frameRate);
-				boidsPanel.repaint();
-			});
-		} catch (InterruptedException ex) {
-			throw new RuntimeException(ex);
-		} catch (InvocationTargetException ex) {
-			throw new RuntimeException(ex);
-		}
+		SwingUtilities.invokeLater(() -> {
+			boidsPanel.setFrameRate(frameRate);
+			boidsPanel.repaint();
+		});
 	}
 
 	@Override
