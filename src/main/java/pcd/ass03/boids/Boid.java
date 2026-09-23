@@ -1,5 +1,7 @@
 package pcd.ass03.boids;
 
+import pcd.ass03.boids.BoidsProtocol.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +13,7 @@ public class Boid {
     private V2d alignment;
     private V2d cohesion;
 
-    private List<Boid> nearbyBoids;
+    private List<BoidState> nearbyBoids;
 
     public Boid(P2d pos, V2d vel) {
     	this.pos = pos;
@@ -26,64 +28,69 @@ public class Boid {
     	return vel;
     }
 
-    public void calculateVelocity(BoidsModel model) {
-        /* change velocity vector according to separation, alignment, cohesion */
-        this.nearbyBoids =  getNearbyBoids(model);
+    public void calculateVelocity(int BoidID, List<BoidState> flock, BoidsConfig config) {
+        this.nearbyBoids =  getNearbyBoids(BoidID, flock, config.perceptionRadius());
 
-        this.separation = calculateSeparation(nearbyBoids, model);
-        this.alignment = calculateAlignment(nearbyBoids, model);
-        this.cohesion = calculateCohesion(nearbyBoids, model);
+        this.separation = calculateSeparation(nearbyBoids, config.avoidRadius());
+        this.alignment = calculateAlignment(nearbyBoids);
+        this.cohesion = calculateCohesion(nearbyBoids);
     }
 
-    public void updateVelocity(BoidsModel model, String boidName) {
+    public void updateVelocity(BoidsConfig config, double sepWeight, double aliWeight, double cohWeight) {
         //System.out.println("[" + Thread.currentThread().getName() + "]: inside updateVelocity - " + boidName);
-        this.vel = vel.sum(alignment.mul(model.getAlignmentWeight()))
-    			.sum(separation.mul(model.getSeparationWeight()))
-    			.sum(cohesion.mul(model.getCohesionWeight()));
+
+        this.vel = vel.sum(alignment.mul(aliWeight))
+    			.sum(separation.mul(sepWeight))
+    			.sum(cohesion.mul(cohWeight));
         
         /* Limit speed to MAX_SPEED */
         double speed = vel.abs();
-        
-        if (speed > model.getMaxSpeed()) {
-            vel = vel.getNormalized().mul(model.getMaxSpeed());
+
+        if (speed > config.maxSpeed()) {
+            vel = vel.getNormalized().mul(config.maxSpeed());
         }
     }    
     
-    public void updatePosition(BoidsModel model, String boidName) {
+    public void updatePosition(BoidsConfig config) {
         //System.out.println("[" + Thread.currentThread().getName() + "]: inside updatePosition - " + boidName);
 
         /* Update position */
         this.pos = pos.sum(vel);
+
+        double width = config.width();
+        double height = config.height();
+        double minX = -width / 2;
+        double maxX = width / 2;
+        double minY = -height / 2;
+        double maxY = height / 2;
         
         /* environment wrap-around */
-        if (pos.x() < model.getMinX()) pos = pos.sum(new V2d(model.getWidth(), 0));
-        if (pos.x() >= model.getMaxX()) pos = pos.sum(new V2d(-model.getWidth(), 0));
-        if (pos.y() < model.getMinY()) pos = pos.sum(new V2d(0, model.getHeight()));
-        if (pos.y() >= model.getMaxY()) pos = pos.sum(new V2d(0, -model.getHeight()));
+        if (pos.x() < minX) pos = pos.sum(new V2d(width, 0));
+        if (pos.x() >= maxX) pos = pos.sum(new V2d(-width, 0));
+        if (pos.y() < minY) pos = pos.sum(new V2d(0, height));
+        if (pos.y() >= maxY) pos = pos.sum(new V2d(0, -height));
     }     
 
-    private List<Boid> getNearbyBoids(BoidsModel model) {
-    	var list = new ArrayList<Boid>();
-        for (Boid boid : model.getBoids()) {
-        	if (boid != this) {
-        		P2d otherPos = boid.getPos();
-        		double distance = pos.distance(otherPos);
-        		if (distance < model.getPerceptionRadius()) {
-        			list.add(boid);
+    private List<BoidState> getNearbyBoids(int boidId, List<BoidState> flock, double perceptionRadius) {
+    	var list = new ArrayList<BoidState>();
+        for (BoidState other : flock) {
+        	if (other.id() != boidId) {
+        		double distance = pos.distance(other.pos());
+        		if (distance < perceptionRadius) {
+        			list.add(other);
         		}
         	}
         }
-        return List.copyOf(list);
+        return list;
     }
     
-    private V2d calculateAlignment(List<Boid> nearbyBoids, BoidsModel model) {
+    private V2d calculateAlignment(List<BoidState> nearbyBoids) {
         double avgVx = 0;
         double avgVy = 0;
-        if (nearbyBoids.size() > 0) {
-	        for (Boid other : nearbyBoids) {
-	        	V2d otherVel = other.getVel();
-	            avgVx += otherVel.x();
-	            avgVy += otherVel.y();
+        if (!nearbyBoids.isEmpty()) {
+	        for (BoidState other : nearbyBoids) {
+	            avgVx += other.vel().x();
+	            avgVy += other.vel().y();
 	        }	        
 	        avgVx /= nearbyBoids.size();
 	        avgVy /= nearbyBoids.size();
@@ -93,42 +100,40 @@ public class Boid {
         }
     }
 
-    private V2d calculateCohesion(List<Boid> nearbyBoids, BoidsModel model) {
+    private V2d calculateCohesion(List<BoidState> nearbyBoids) {
         double centerX = 0;
         double centerY = 0;
-        if (nearbyBoids.size() > 0) {
-	        for (Boid other: nearbyBoids) {
-	        	P2d otherPos = other.getPos();
-	            centerX += otherPos.x();
-	            centerY += otherPos.y();
-	        }
+        if (!nearbyBoids.isEmpty()) {
+            for (BoidState other: nearbyBoids) {
+                centerX += other.pos().x();
+                centerY += other.pos().y();
+            }
             centerX /= nearbyBoids.size();
             centerY /= nearbyBoids.size();
             return new V2d(centerX - pos.x(), centerY - pos.y()).getNormalized();
         } else {
-        	return new V2d(0, 0);
+            return new V2d(0, 0);
         }
     }
-    
-    private V2d calculateSeparation(List<Boid> nearbyBoids, BoidsModel model) {
+
+    private V2d calculateSeparation(List<BoidState> nearbyBoids, double avoidRadius) {
         double dx = 0;
         double dy = 0;
         int count = 0;
-        for (Boid other: nearbyBoids) {
-        	P2d otherPos = other.getPos();
-    	    double distance = pos.distance(otherPos);
-    	    if (distance < model.getAvoidRadius()) {
-    	    	dx += pos.x() - otherPos.x();
-    	    	dy += pos.y() - otherPos.y();
-    	    	count++;
-    	    }
-    	}
+        for (BoidState other: nearbyBoids) {
+            double distance = pos.distance(other.pos());
+            if (distance < avoidRadius) {
+                dx += pos.x() - other.pos().x();
+                dy += pos.y() - other.pos().y();
+                count++;
+            }
+        }
         if (count > 0) {
             dx /= count;
             dy /= count;
             return new V2d(dx, dy).getNormalized();
         } else {
-        	return new V2d(0, 0);
+            return new V2d(0, 0);
         }
     }
 }

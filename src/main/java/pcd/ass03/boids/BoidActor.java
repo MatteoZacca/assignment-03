@@ -6,59 +6,45 @@ import pcd.ass03.boids.BoidsProtocol.*;
 
 public class BoidActor extends AbstractActor{
 
-    private Boid boid;
-    private BoidsModel model;
+    private final int id;
+    private Boid boid; // only this actor touches this instance
+    private final BoidsConfig config;
 
-    public BoidActor(Boid boid, BoidsModel model) {
-        this.boid = new Boid(boid.getPos(), boid.getVel());
-        this.model = model;
+    public BoidActor(int id, Boid initialBoid, BoidsConfig config) {
+        this.id = id;
+        this.boid = new Boid(initialBoid.getPos(), initialBoid.getVel());
+        this.config = config;
     }
 
+    @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(CalculateVelocityMsg.class, this::onCalculateVelocity)
-                .match(BeforeUpdateBoidMsg.class, this::onBeforeUpdateBoid)
-                .match(UpdateSeparationWeightMsg.class, msg -> {
-                    this.model.setSeparationWeight(msg.weight());
-                    getSender().tell(new AfterUpdateSeparationWeightMsg(), ActorRef.noSender());
-                    log(this.getSelf().path().name() + " updated separation weight: " + msg.weight());
-                })
-                .match(UpdateAlignmentWeightMsg.class, msg -> {
-                    this.model.setAlignmentWeight(msg.weight());
-                    getSender().tell(new AfterUpdateAlignmentWeight(), ActorRef.noSender());
-                    log(this.getSelf().path().name() + " updated alignment weight: " + msg.weight());
-                })
-                .match(UpdateCohesionWeightMsg.class, msg -> {
-                    this.model.setCohesionWeight(msg.weight());
-                    getSender().tell(new AfterUpdateCohesionWeight(), ActorRef.noSender());
-                    log(this.getSelf().path().name() + " updated cohesion weight: " + msg.weight());
-                })
+                .match(ComputeStepMsg.class, this::onComputeStep)
                 .build();
     }
 
-    private void onCalculateVelocity(CalculateVelocityMsg msg) {
-        model.setBoids(msg.boids());
-        boid.calculateVelocity(model);
-        getSender().tell(new AfterCalculateVelocityMsg(), ActorRef.noSender());
-    }
-
-    /* 1. Akka receives a BeforeUpdateBoidMsg
-    2. it picks a thread from the dispatcher and uses it to call onBeforeUpdateBoid
-    3. That threads runs all lines of code in order: updateVelocity(...), updatePosition(...)
-    and then getSender().tell(...)
-    Java runs the methods sequentially on the same thread (every method call is blocking unless
-    you explicitly make it asynchronous */
-    private void onBeforeUpdateBoid(BeforeUpdateBoidMsg msg) {
-        //log(getSelf().path().name() + " received BeforeUpdateBoidMsg");
-        boid.updateVelocity(model, getSelf().path().name());
-        boid.updatePosition(model, getSelf().path().name());
-        getSender().tell(new AfterUpdateBoidMsg(
-                new Boid(
-                        new P2d(boid.getPos().x(), boid.getPos().y()),
-                        new V2d(boid.getVel().x(), boid.getVel().y())
-                )),
-                ActorRef.noSender()
+    private void onComputeStep(ComputeStepMsg msg) {
+        boid.calculateVelocity(
+                this.id,
+                msg.flockState(),
+                config
         );
+
+        boid.updateVelocity(
+                config,
+                msg.separationWeight(),
+                msg.alignmentWeight(),
+                msg.cohesionWeight()
+        );
+        boid.updatePosition(config);
+
+        BoidState newState = new BoidState(
+                this.id,
+                new P2d(boid.getPos().x(), boid.getPos().y()),
+                new V2d(boid.getVel().x(), boid.getVel().y())
+        );
+
+        getSender().tell(new StepDoneMsg(newState), getSelf());
     }
 
     private static void log(String print) {

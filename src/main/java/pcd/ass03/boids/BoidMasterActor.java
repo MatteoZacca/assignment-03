@@ -7,27 +7,35 @@ import scala.concurrent.duration.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BoidMasterActor extends AbstractActorWithStash {
+public class BoidMasterActor extends AbstractActor {
 
     private long t0;
     private int framerate;
     private static final int FRAMERATE = 60;
 
     private BoidsModel model;
+    private BoidsConfig config;
     private BoidsView view;
 
     private int nStartingBoids;
     private int countUpdate;
-    private int countUpdateWeight;
-    private List<ActorRef> boidsActor;
-    private List<Boid> updatedBoids;
+    private boolean isPaused = true;
+
+    private List<ActorRef> boidsActors;
+    private List<BoidState> currentStates;
+    private List<BoidState> nextStates;
+
+    private double currentSeparationWeight;
+    private double currentAlignmentWeight;
+    private double currentCohesionWeight;
 
     public BoidMasterActor(BoidsModel model, int nStartingBoids, BoidsView view) {
         this.model = model;
         this.nStartingBoids = nStartingBoids;
         this.view = view;
-        this.boidsActor = new ArrayList<>();
-        this.updatedBoids = new ArrayList<>();
+        this.boidsActors = new ArrayList<>();
+        this.currentStates = new ArrayList<>();
+        this.nextStates = new ArrayList<>();
     }
 
     /* --------------------------------- BEHAVIOURS --------------------------------- */
@@ -36,172 +44,136 @@ public class BoidMasterActor extends AbstractActorWithStash {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(BootMsg.class, this::onBoot)
-                .match(StartSimulationMsg.class, this::onStartSimulation)
+                .match(StartSimulationMsg.class, msg -> {
+                    log("[" + getSelf().path().name() + "] received StartSimulationMsg");
+                    isPaused = false;
+                    triggerNextFrame();
+                    getContext().become(runningBehaviour());
+                })
                 .match(ResetSimulationMsg.class, this::onResetSimulation) // This enables processing two successive
                 // updates to nBoids through the JTextField without needing to press the 'Play' button in between.
-                .matchAny(msg -> {
-                    //log("Unhandled (will stash): " + msg.getClass());
-                    this.stash();
+                // Safely catch and ignore delayed messages from the previous run
+                .match(Tick.class, msg -> {})
+                .match(StepDoneMsg.class, msg -> {})
+                .build();
+    }
+
+    public Receive runningBehaviour() {
+        return receiveBuilder()
+                .match(StepDoneMsg.class, this::onStepDone)
+                .match(Tick.class, msg -> {
+                    // Only start a new frame if we aren't paused
+                    if (!isPaused) {
+                        triggerNextFrame();
+                    }
                 })
-                .build();
-    }
-
-    public Receive UpdateBehaviour() {
-        return receiveBuilder()
-                .match(AfterCalculateVelocityMsg.class, this::onAfterCalculateVelocity)
-                .match(AfterUpdateBoidMsg.class, this::onAfterUpdateBoid)
-                .match(Tick.class, this::onTick)
-                .matchAny(msg -> {
-                    //log("Unhandled (will stash): " + msg.getClass());
-                    this.stash();
+                .match(PauseSimulationMsg.class, msg -> {
+                    log("[" + getSelf().path().name() + "] received PauseSimulationMsg");
+                    isPaused = true;
                 })
-                .build();
-    }
-
-    public Receive RunningSimulationBehaviour() {
-        return receiveBuilder()
-                .match(ContinueUpdatingSimulationMsg.class, this::onContinueUpdatingSimulation)
-                .match(PauseSimulationMsg.class, this::onPauseSimulation)
-                .match(ResetSimulationMsg.class, this::onResetSimulation) // that's only for ResetSimulationMsg received
-                // from boidsSlider
-                .match(UpdateSeparationWeightMsg.class, this::onBeforeUpdateSeparationWeight)
-                .match(UpdateAlignmentWeightMsg.class, this::onBeforeUpdateAlignmentWeight)
-                .match(UpdateCohesionWeightMsg.class, this::onBeforeUpdateCohesionWeight)
-                .matchAny(msg -> {
-                    //log("Unhandled (will stash): " + msg.getClass());
-                    this.stash();
+                .match(StartSimulationMsg.class, msg -> {
+                    log("[" + getSelf().path().name() + "] received StartSimulationMsg");
+                    if (isPaused) {
+                        isPaused = false;
+                        if (countUpdate == 0) {
+                            triggerNextFrame();
+                        }
+                    }
                 })
-                .build();
-    }
-
-    public Receive UpdateWeightBehaviour() {
-        return receiveBuilder()
-                .match(AfterUpdateSeparationWeightMsg.class, this::onAfterUpdateSeparationWeight)
-                .match(AfterUpdateAlignmentWeight.class, this::onAfterUpdateAlignmentWeight)
-                .match(AfterUpdateCohesionWeight.class, this::onAfterUpdateCohesionWeight)
-                .matchAny(msg -> {
-                            //log("Unhandled (will stash): " + msg.getClass());
-                            stash();
-                        })
-                .build();
-    }
-
-    public Receive pausingBehaviour() {
-        return receiveBuilder()
-                .match(StartSimulationMsg.class, this::onStartSimulation)
                 .match(ResetSimulationMsg.class, this::onResetSimulation)
-                .matchAny(msg -> {
-                    //log("Unhandled (will stash): " + msg.getClass());
-                    stash();
-                })
+                .match(UpdateSeparationWeightMsg.class, msg -> this.currentSeparationWeight = msg.weight())
+                .match(UpdateAlignmentWeightMsg.class, msg -> this.currentAlignmentWeight = msg.weight())
+                .match(UpdateCohesionWeightMsg.class, msg -> this.currentCohesionWeight = msg.weight())
                 .build();
     }
 
     /* --------------------------------- METHODS --------------------------------- */
+
     private void onBoot(BootMsg msg) {
         log("[" + this.getSelf().path().name() + "] received BootMsg");
         this.model = msg.model(); // the first BootMsg sent in BoidsSimulation wouldn't need this,
         // but every time we push the Reset button, this actor receive a BootMsg, so we have to
         // ri-initialize this.model
 
+        this.config = new BoidsConfig(
+                model.getWidth(), model.getHeight(), model.getMaxSpeed(),
+                model.getPerceptionRadius(), model.getAvoidRadius()
+        );
+
+        this.currentSeparationWeight = model.getSeparationWeight();
+        this.currentAlignmentWeight = model.getAlignmentWeight();
+        this.currentCohesionWeight = model.getCohesionWeight();
+
         List<Boid> startingBoids = model.getBoids();
+        this.currentStates.clear();
 
         for (int i = 0; i < startingBoids.size(); i++) {
             Boid boid = startingBoids.get(i);
+
+            this.currentStates.add(new BoidState(
+                    i, new P2d(boid.getPos().x(), boid.getPos().y()), new V2d(boid.getVel().x(), boid.getVel().y())
+            ));
+
+            final int boidId = i;
+
             ActorRef boidActor = getContext().actorOf(Props.create(
                     BoidActor.class,
-                    () -> new BoidActor(boid, model)),
+                    () -> new BoidActor(boidId, boid, config)),
                     "boid-" + i + "-" + System.currentTimeMillis()); // in this way i create a unique name
             // for every actor, and I won't have problem inside onResetSimulation
-            this.boidsActor.add(boidActor);
+            this.boidsActors.add(boidActor);
         }
     }
 
-    private void onStartSimulation(StartSimulationMsg msg) {
-        log("[" + this.getSelf().path().name() + "] received StartSimulationMsg - nBoids: " + this.boidsActor.size());
+    private void triggerNextFrame() {
         this.t0 = System.currentTimeMillis();
+        this.countUpdate = boidsActors.size();
+        this.nextStates.clear();
 
-        this.countUpdate = boidsActor.size();
-        this.updatedBoids.clear();
+        // Send a single ComputeStepMsg to all boids with the immutable list and current weights
+        ComputeStepMsg computeMsg = new ComputeStepMsg(
+                this.currentStates,
+                this.currentSeparationWeight,
+                this.currentAlignmentWeight,
+                this.currentCohesionWeight
+        );
 
-        for(ActorRef boid : boidsActor) {
-            boid.tell(new CalculateVelocityMsg(model.getBoids()), getSelf());
-        }
-
-        this.getContext().become(UpdateBehaviour());
-        this.unstashAll();
-    }
-
-    private void onAfterCalculateVelocity(AfterCalculateVelocityMsg msg) {
-        this.countUpdate--;
-        if (this.countUpdate == 0) {
-            log(this.getSelf().path().name() + " received " + this.boidsActor.size() +
-                    " AfterCalculateVelocityMsg, now it can send BeforeUpdateBoidMsg()");
-            for (ActorRef boid : boidsActor) {
-                boid.tell(new BeforeUpdateBoidMsg(), getSelf());
-            }
-            this.countUpdate = this.boidsActor.size();
+        for (ActorRef boid : boidsActors) {
+            boid.tell(computeMsg, getSelf());
         }
     }
 
-    private void onAfterUpdateBoid(AfterUpdateBoidMsg msg) {
-        this.updatedBoids.add(msg.updatedBoid());
+    private void scheduleTick() {
+        long dtElapsed = System.currentTimeMillis() - t0;
+        long frameratePeriod = 1000 / FRAMERATE;
+        long delay = Math.max(0, frameratePeriod - dtElapsed);
+
+        if (dtElapsed < frameratePeriod) {
+            this.framerate = FRAMERATE;
+        } else {
+            this.framerate = (int) (1000 / dtElapsed);
+        }
+
+        getContext().system().scheduler().scheduleOnce(
+                Duration.create(delay, java.util.concurrent.TimeUnit.MILLISECONDS),
+                self(), new Tick(), getContext().getSystem().dispatcher(), self()
+        );
+    }
+
+    private void onStepDone(StepDoneMsg msg) {
+        this.nextStates.add(msg.updatedBoid());
         this.countUpdate--;
+
         if (countUpdate == 0) {
-            log(this.getSelf().path().name() + " received " + this.boidsActor.size() +
-                    " AfterUpdateBoidMsg, now it can send update the GUI and send TickMsg");
-            this.model.setBoids(new ArrayList<>(this.updatedBoids));
-            //this.model.getPrintingBoids();
+            // Swap snapshot lists for the next frame
+            this.currentStates = new ArrayList<>(this.nextStates);
+
+            // Update the model so the View can render it (we will fix the view logic next)
+            this.model.setBoids(convertSnapshotsToBoids(this.currentStates));
             this.view.update(framerate);
 
-            long dtElapsed = System.currentTimeMillis() - t0;
-            long frameratePeriod = 1000 / FRAMERATE;
-            long delay = Math.max(0, frameratePeriod - dtElapsed);
-
-            if (dtElapsed < frameratePeriod) {
-                this.framerate = FRAMERATE;
-            } else {
-                this.framerate = (int) (1000 / dtElapsed);
-            }
-
-            /* This schedules a one-time message Tick to be sent to the actor after a delay,
-            using the actor system's scheduler. */
-            getContext().system().scheduler().scheduleOnce(
-                    Duration.create(delay, java.util.concurrent.TimeUnit.MILLISECONDS),
-                    self(), // the recipient of the message
-                    new Tick(), // message to send after the delay
-                    getContext().getSystem().dispatcher(), // this is the Akka dispatcher that will run the delayed task
-                    // (usually the default thread-pool for actors)
-                    self() // this defines the sender of the message
-            );
+            scheduleTick();
         }
-    }
-
-    private void onTick(Tick msg) {
-        log("[" + this.getSelf().path().name() + "] received TickMsg");
-        this.getContext().become(RunningSimulationBehaviour());
-        this.unstashAll();
-        getSelf().tell(new ContinueUpdatingSimulationMsg(), ActorRef.noSender());
-    }
-
-    private void onContinueUpdatingSimulation(ContinueUpdatingSimulationMsg msg) {
-        log(this.getSelf().path().name() + " received ContinueUpdatingSimulationMsg");
-        this.t0 = System.currentTimeMillis();
-
-        this.countUpdate = boidsActor.size();
-        this.updatedBoids.clear();
-
-        for(ActorRef boid : boidsActor) {
-            boid.tell(new CalculateVelocityMsg(model.getBoids()), getSelf());
-        }
-
-        this.getContext().become(UpdateBehaviour());
-        this.unstashAll();
-    }
-
-    private void onPauseSimulation(PauseSimulationMsg msg) {
-        log("[" + this.getSelf().path().name() + "] received PauseSimulationMsg");
-        this.getContext().become(pausingBehaviour());
     }
 
     private void onResetSimulation(ResetSimulationMsg msg) {
@@ -209,97 +181,25 @@ public class BoidMasterActor extends AbstractActorWithStash {
         this.nStartingBoids = msg.nStartingBoids();
         this.model.generateBoids(nStartingBoids);
 
-        for (ActorRef boid : boidsActor) {
+        for (ActorRef boid : boidsActors) {
             boid.tell(PoisonPill.getInstance(), ActorRef.noSender());
         }
 
-        this.boidsActor.clear();
+        this.boidsActors.clear();
         this.getContext().become(createReceive());
         this.getSelf().tell(new BootMsg(this.model), ActorRef.noSender());
-        this.unstashAll();
-
     }
 
-    private void onBeforeUpdateSeparationWeight(UpdateSeparationWeightMsg msg) {
-        log("[" + this.getSelf().path().name() + "] received UpdateSeparationWeightMsg ---> " + String.format("%.1f", msg.weight()));
-
-        this.countUpdateWeight = this.boidsActor.size();
-        this.model.setSeparationWeight(msg.weight());
-
-        for (ActorRef boid : boidsActor) {
-            boid.tell(new UpdateSeparationWeightMsg(msg.weight()), getSelf());
+    // Helper method to keep BoidsView rendering correctly until we update the View logic
+    private List<Boid> convertSnapshotsToBoids(List<BoidState> snapshots) {
+        List<Boid> boids = new ArrayList<>();
+        for (BoidState snap : snapshots) {
+            boids.add(new Boid(snap.pos(), snap.vel()));
         }
-
-        this.getContext().become(UpdateWeightBehaviour());
-        this.unstashAll();
-    }
-
-    private void onAfterUpdateSeparationWeight(AfterUpdateSeparationWeightMsg msg) {
-        this.countUpdateWeight--;
-        if(this.countUpdateWeight == 0) {
-            log("[" + this.getSelf().path().name() + "] received " + this.boidsActor.size() +
-                    " AfterUpdateSeparationWeightMsg");
-
-            this.countUpdateWeight = this.boidsActor.size();
-            this.getContext().become(RunningSimulationBehaviour());
-            this.unstashAll();
-        }
-    }
-
-    private void onBeforeUpdateAlignmentWeight(UpdateAlignmentWeightMsg msg) {
-        log("[" + this.getSelf().path().name() + "] received UpdateAlignmentWeightMsg ---> " + String.format("%.1f", msg.weight()));
-
-        this.countUpdateWeight = this.boidsActor.size();
-        this.model.setAlignmentWeight(msg.weight());
-
-        for (ActorRef boid : boidsActor) {
-            boid.tell(new UpdateAlignmentWeightMsg(msg.weight()), getSelf());
-        }
-
-        this.getContext().become(UpdateWeightBehaviour());
-        this.unstashAll();
-    }
-
-    private void onAfterUpdateAlignmentWeight(AfterUpdateAlignmentWeight msg) {
-        this.countUpdateWeight--;
-        if (this.countUpdateWeight == 0) {
-            log("[" + this.getSelf().path().name() + "] received " + this.boidsActor.size() +
-                    " AfterUpdateAlignmentWeightMsg");
-
-            this.countUpdateWeight = this.boidsActor.size();
-            this.getContext().become(RunningSimulationBehaviour());
-            this.unstashAll();
-        }
-    }
-
-    private void onBeforeUpdateCohesionWeight(UpdateCohesionWeightMsg msg) {
-        log("[" + this.getSelf().path().name() + "] received UpdateCohesionWeightMsg ---> " + String.format("%.1f", msg.weight()));
-
-        this.countUpdateWeight = this.boidsActor.size();
-        this.model.setCohesionWeight(msg.weight());
-
-        for (ActorRef boid : boidsActor) {
-            boid.tell(new UpdateCohesionWeightMsg(msg.weight()), getSelf());
-        }
-
-        this.getContext().become(UpdateWeightBehaviour());
-        this.unstashAll();
-    }
-
-    private void onAfterUpdateCohesionWeight(AfterUpdateCohesionWeight msg) {
-        this.countUpdateWeight--;
-        if (this.countUpdateWeight == 0) {
-            log("[" + this.getSelf().path().name() + "] received " + this.boidsActor.size() +
-                    " AfterUpdateCohesionWeightMsg");
-
-            this.countUpdateWeight = this.boidsActor.size();
-            this.getContext().become(RunningSimulationBehaviour());
-            this.unstashAll();
-        }
+        return boids;
     }
 
     private static void log(String print) {
         System.out.println("[" + Thread.currentThread().getName() + "]: " + print);
     }
-
 }

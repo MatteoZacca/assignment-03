@@ -3,6 +3,25 @@ package pcd.ass03.boids;
 import java.util.List;
 
 public interface BoidsProtocol {
+
+    // --- Configuration & Data Structures ---
+
+    public static record BoidsConfig(
+            double width,
+            double height,
+            double maxSpeed,
+            double perceptionRadius,
+            double avoidRadius
+    ) {}
+
+    public static record BoidState(
+            int id,
+            P2d pos,
+            V2d vel
+    ) {}
+
+    // --- Lifecycle Messages ---
+
     public static record BootMsg(BoidsModel model) {};
 
     public static record StartSimulationMsg() {};
@@ -11,30 +30,23 @@ public interface BoidsProtocol {
 
     public static record ResetSimulationMsg(int nStartingBoids) {};
 
-    public static record CalculateVelocityMsg(List<Boid> boids) {};
+    public static record Tick() {}
 
-    public static record AfterCalculateVelocityMsg() {};
+    // --- Simulation Step Messages ---
 
-    public static record BeforeUpdateBoidMsg() {};
+    public static record ComputeStepMsg(
+            List<BoidState> flockState,
+            double separationWeight,
+            double alignmentWeight,
+            double cohesionWeight
 
-    public static record AfterUpdateBoidMsg(Boid updatedBoid) {};
+    ) {}
 
-    public static record ContinueUpdatingSimulationMsg() {};
+    public static record StepDoneMsg(BoidState updatedBoid) {}
 
-    public static record UpdateSeparationWeightMsg(double weight) {};
+    // --- UI Update Messages ---
 
-    public static record AfterUpdateSeparationWeightMsg() {};
-
-    public static record UpdateAlignmentWeightMsg(double weight) {};
-
-    public static record AfterUpdateAlignmentWeight() {};
-
-    public static record UpdateCohesionWeightMsg(double weight) {};
-
-    public static record AfterUpdateCohesionWeight() {};
-
-    public static record Tick() {};
-
-
-
+    public static record UpdateSeparationWeightMsg(double weight) {}
+    public static record UpdateAlignmentWeightMsg(double weight) {}
+    public static record UpdateCohesionWeightMsg(double weight) {}
 }
