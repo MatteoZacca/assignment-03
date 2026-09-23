@@ -8,8 +8,8 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Hashtable;
+import java.util.List;
 
 public class BoidsView implements ChangeListener {
 
@@ -29,9 +29,9 @@ public class BoidsView implements ChangeListener {
 		});
 	}
 
-	public void update(int frameRate) {
+	public void update(List<BoidState> states, int frameRate) {
 		SwingUtilities.invokeLater(() -> {
-			boidsPanel.setFrameRate(frameRate);
+			boidsPanel.updateFrame(states, frameRate);
 			boidsPanel.repaint();
 		});
 	}

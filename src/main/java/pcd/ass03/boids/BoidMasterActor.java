@@ -167,11 +167,7 @@ public class BoidMasterActor extends AbstractActor {
         if (countUpdate == 0) {
             // Swap snapshot lists for the next frame
             this.currentStates = new ArrayList<>(this.nextStates);
-
-            // Update the model so the View can render it (we will fix the view logic next)
-            this.model.setBoids(convertSnapshotsToBoids(this.currentStates));
-            this.view.update(framerate);
-
+            this.view.update(this.currentStates, framerate);
             scheduleTick();
         }
     }
@@ -188,15 +184,6 @@ public class BoidMasterActor extends AbstractActor {
         this.boidsActors.clear();
         this.getContext().become(createReceive());
         this.getSelf().tell(new BootMsg(this.model), ActorRef.noSender());
-    }
-
-    // Helper method to keep BoidsView rendering correctly until we update the View logic
-    private List<Boid> convertSnapshotsToBoids(List<BoidState> snapshots) {
-        List<Boid> boids = new ArrayList<>();
-        for (BoidState snap : snapshots) {
-            boids.add(new Boid(snap.pos(), snap.vel()));
-        }
-        return boids;
     }
 
     private static void log(String print) {
