@@ -7,7 +7,7 @@
  * Use is subject to license terms.
  *
  */
-package pcd.ass03.boids;
+package pcd.ass03.boids.domain;
 
 /**
  *

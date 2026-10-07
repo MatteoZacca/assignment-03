@@ -1,4 +1,8 @@
-package pcd.ass03.boids;
+package pcd.ass03.boids.actors;
+
+import pcd.ass03.boids.config.BoidsModel;
+import pcd.ass03.boids.domain.P2d;
+import pcd.ass03.boids.domain.V2d;
 
 import java.util.List;
 

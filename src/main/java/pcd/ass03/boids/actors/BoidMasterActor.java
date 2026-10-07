@@ -1,7 +1,12 @@
-package pcd.ass03.boids;
+package pcd.ass03.boids.actors;
 
 import akka.actor.*;
-import pcd.ass03.boids.BoidsProtocol.*;
+import pcd.ass03.boids.config.BoidsModel;
+import pcd.ass03.boids.ui.BoidsView;
+import pcd.ass03.boids.actors.BoidsProtocol.*;
+import pcd.ass03.boids.domain.Boid;
+import pcd.ass03.boids.domain.P2d;
+import pcd.ass03.boids.domain.V2d;
 import scala.concurrent.duration.Duration;
 
 import java.util.ArrayList;

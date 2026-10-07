@@ -1,10 +1,10 @@
 package pcd.ass03.boids;
 
 import akka.actor.*;
-import pcd.ass03.boids.BoidsProtocol.*;
-
-import java.util.ArrayList;
-import java.util.List;
+import pcd.ass03.boids.actors.BoidMasterActor;
+import pcd.ass03.boids.actors.BoidsProtocol.*;
+import pcd.ass03.boids.config.BoidsModel;
+import pcd.ass03.boids.ui.BoidsView;
 
 public class BoidsSimulation {
     private final static int N_BOIDS = 1500;

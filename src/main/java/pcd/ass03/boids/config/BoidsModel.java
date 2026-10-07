@@ -1,4 +1,8 @@
-package pcd.ass03.boids;
+package pcd.ass03.boids.config;
+
+import pcd.ass03.boids.domain.Boid;
+import pcd.ass03.boids.domain.P2d;
+import pcd.ass03.boids.domain.V2d;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,7 @@
-package pcd.ass03.boids;
+package pcd.ass03.boids.ui;
 
-import pcd.ass03.boids.BoidsProtocol.BoidState;
+import pcd.ass03.boids.config.BoidsModel;
+import pcd.ass03.boids.actors.BoidsProtocol.BoidState;
 
 import javax.swing.*;
 import java.awt.*;

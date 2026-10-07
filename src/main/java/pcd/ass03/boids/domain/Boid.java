@@ -1,6 +1,6 @@
-package pcd.ass03.boids;
+package pcd.ass03.boids.domain;
 
-import pcd.ass03.boids.BoidsProtocol.*;
+import pcd.ass03.boids.actors.BoidsProtocol.*;
 
 import java.util.ArrayList;
 import java.util.List;

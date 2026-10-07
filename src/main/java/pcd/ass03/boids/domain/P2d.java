@@ -1,4 +1,4 @@
-package pcd.ass03.boids;
+package pcd.ass03.boids.domain;
 
 /**
  *
