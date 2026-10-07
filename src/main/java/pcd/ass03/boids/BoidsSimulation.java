@@ -7,7 +7,7 @@ import pcd.ass03.boids.config.BoidsModel;
 import pcd.ass03.boids.ui.BoidsView;
 
 public class BoidsSimulation {
-    private final static int N_BOIDS = 1500;
+    private final static int STARTING_BOIDS = 1500;
 
     private final static double SEPARATION_WEIGHT = 1.0;
     private final static double ALIGNMENT_WEIGHT = 1.0;
@@ -25,18 +25,18 @@ public class BoidsSimulation {
 
     public static void main(String[] args) {
 
-        BoidsModel model = new BoidsModel(N_BOIDS,
+        BoidsModel model = new BoidsModel(STARTING_BOIDS,
                 SEPARATION_WEIGHT, ALIGNMENT_WEIGHT, COHESION_WEIGHT,
                 ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT,
                 MAX_SPEED, PERCEPTION_RADIUS, AVOID_RADIUS);
 
         ActorSystem system  = ActorSystem.create("boids-system");
 
-        BoidsView view = new BoidsView(model, SCREEN_WIDTH, SCREEN_HEIGHT, N_BOIDS);
+        BoidsView view = new BoidsView(model, SCREEN_WIDTH, SCREEN_HEIGHT, STARTING_BOIDS);
 
         ActorRef master = system.actorOf(Props.create(
                 BoidMasterActor.class,
-                () -> new BoidMasterActor(model, N_BOIDS, view)),
+                () -> new BoidMasterActor(model, STARTING_BOIDS, view)),
                 "boid-master-actor"
         );
 
