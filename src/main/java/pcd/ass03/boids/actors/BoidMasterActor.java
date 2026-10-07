@@ -4,9 +4,6 @@ import akka.actor.*;
 import pcd.ass03.boids.config.BoidsModel;
 import pcd.ass03.boids.ui.BoidsView;
 import pcd.ass03.boids.actors.BoidsProtocol.*;
-import pcd.ass03.boids.domain.Boid;
-import pcd.ass03.boids.domain.P2d;
-import pcd.ass03.boids.domain.V2d;
 import scala.concurrent.duration.Duration;
 
 import java.util.ArrayList;
@@ -20,15 +17,14 @@ public class BoidMasterActor extends AbstractActor {
 
     private BoidsModel model;
     private BoidsConfig config;
-    private BoidsView view;
+    private final BoidsView view;
 
     private int nStartingBoids;
     private int countUpdate;
-    private boolean isPaused = true;
 
-    private List<ActorRef> boidsActors;
+    private final List<ActorRef> boidsActors;
     private List<BoidState> currentStates;
-    private List<BoidState> nextStates;
+    private final List<BoidState> nextStates;
 
     private double currentSeparationWeight;
     private double currentAlignmentWeight;
@@ -52,7 +48,6 @@ public class BoidMasterActor extends AbstractActor {
                 .match(BoidsInitializationMsg.class, this::onBoidsInitialization)
                 .match(StartSimulationMsg.class, msg -> {
                     log("[" + getSelf().path().name() + "] received StartSimulationMsg");
-                    isPaused = false;
                     triggerNextFrame();
                     getContext().become(runningBehaviour());
                 })
@@ -71,24 +66,11 @@ public class BoidMasterActor extends AbstractActor {
         return receiveBuilder()
                 .match(StepDoneMsg.class, this::onStepDone)
                 .match(Tick.class, msg -> {
-                    // Only start a new frame if we aren't paused
-                    if (!isPaused) {
-                        triggerNextFrame();
-                    }
+                    triggerNextFrame();
                 })
                 .match(PauseSimulationMsg.class, msg -> {
                     log("[" + getSelf().path().name() + "] received PauseSimulationMsg");
-                    isPaused = true;
                     getContext().become(createReceive());
-                })
-                .match(StartSimulationMsg.class, msg -> {
-                    log("[" + getSelf().path().name() + "] received StartSimulationMsg");
-                    if (isPaused) {
-                        isPaused = false;
-                        if (countUpdate == 0) {
-                            triggerNextFrame();
-                        }
-                    }
                 })
                 .match(ResetSimulationMsg.class, this::onResetSimulation)
                 .match(UpdateSeparationWeightMsg.class, msg -> this.currentSeparationWeight = msg.weight())
