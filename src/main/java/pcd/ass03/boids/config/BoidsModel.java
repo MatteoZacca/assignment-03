@@ -15,13 +15,11 @@ public class BoidsModel {
     private final double perceptionRadius;
     private final double avoidRadius;
 
-    private List<Boid> boids;
     private double separationWeight;
     private double alignmentWeight;
     private double cohesionWeight;
 
-    public BoidsModel(int nboids,
-                      double initialSeparationWeight,
+    public BoidsModel(double initialSeparationWeight,
                       double initialAlignmentWeight,
                       double initialCohesionWeight,
                       double width,
@@ -37,40 +35,6 @@ public class BoidsModel {
         this.maxSpeed = maxSpeed;
         this.perceptionRadius = perceptionRadius;
         this.avoidRadius = avoidRadius;
-
-        generateBoids(nboids);
-    }
-
-    public void generateBoids(int nboids) {
-        this.boids = new ArrayList<>();
-        for (int i = 0; i < nboids; i++) {
-            P2d pos = new P2d(Math.random() * width - width / 2, Math.random() * height - height / 2);
-            V2d vel = new V2d(Math.random() * maxSpeed / 2 - maxSpeed / 4, Math.random() * maxSpeed / 2 - maxSpeed / 4);
-            boids.add(new Boid(pos, vel));
-            //System.out.println("Boid-" + i + " ---> pos(" + pos.x() + ", " + pos.y() + ") - vel(" + vel.x() + ", " + vel.y() + ")");
-        }
-    }
-
-    // Debug
-    /*
-    public void getPrintingBoids() {
-        for (int i = 0; i < this.boids.size(); i++) {
-            System.out.println("Boid-" + i + " ---> pos(" + boids.get(i).getPos().x() + ", " + boids.get(i).getPos().y() +
-                    ") - vel(" + boids.get(i).getVel().x() + ", " + boids.get(i).getVel().y() + ")");
-        }
-    }
-    */
-
-    public List<Boid> getBoids() {
-        return this.boids;
-    }
-
-    public void setBoids(List<Boid> boids) {
-        this.boids = boids;
-    }
-
-    public void setBoidsNumber(int boidsNumber) {
-        generateBoids(boidsNumber);
     }
 
     public double getMinX() {

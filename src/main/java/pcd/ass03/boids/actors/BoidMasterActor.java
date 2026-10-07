@@ -49,6 +49,7 @@ public class BoidMasterActor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(BootMsg.class, this::onBoot)
+                .match(BoidsInitializationMsg.class, this::onBoidsInitialization)
                 .match(StartSimulationMsg.class, msg -> {
                     log("[" + getSelf().path().name() + "] received StartSimulationMsg");
                     isPaused = false;
@@ -60,6 +61,9 @@ public class BoidMasterActor extends AbstractActor {
                 // Safely catch and ignore delayed messages from the previous run
                 .match(Tick.class, msg -> {})
                 .match(StepDoneMsg.class, msg -> {})
+                .match(UpdateSeparationWeightMsg.class, msg -> this.currentSeparationWeight = msg.weight())
+                .match(UpdateAlignmentWeightMsg.class, msg -> this.currentAlignmentWeight = msg.weight())
+                .match(UpdateCohesionWeightMsg.class, msg -> this.currentCohesionWeight = msg.weight())
                 .build();
     }
 
@@ -75,6 +79,7 @@ public class BoidMasterActor extends AbstractActor {
                 .match(PauseSimulationMsg.class, msg -> {
                     log("[" + getSelf().path().name() + "] received PauseSimulationMsg");
                     isPaused = true;
+                    getContext().become(createReceive());
                 })
                 .match(StartSimulationMsg.class, msg -> {
                     log("[" + getSelf().path().name() + "] received StartSimulationMsg");
@@ -109,24 +114,32 @@ public class BoidMasterActor extends AbstractActor {
         this.currentAlignmentWeight = model.getAlignmentWeight();
         this.currentCohesionWeight = model.getCohesionWeight();
 
-        List<Boid> startingBoids = model.getBoids();
         this.currentStates.clear();
+        this.nextStates.clear();
+        this.boidsActors.clear();
 
-        for (int i = 0; i < startingBoids.size(); i++) {
-            Boid boid = startingBoids.get(i);
+        this.countUpdate = nStartingBoids;
 
-            this.currentStates.add(new BoidState(
-                    i, new P2d(boid.getPos().x(), boid.getPos().y()), new V2d(boid.getVel().x(), boid.getVel().y())
-            ));
-
+        for (int i = 0; i < nStartingBoids; i++) {
             final int boidId = i;
 
             ActorRef boidActor = getContext().actorOf(Props.create(
                     BoidActor.class,
-                    () -> new BoidActor(boidId, boid, config)),
+                    () -> new BoidActor(boidId, config)),
                     "boid-" + i + "-" + System.currentTimeMillis()); // in this way i create a unique name
             // for every actor, and I won't have problem inside onResetSimulation
             this.boidsActors.add(boidActor);
+        }
+    }
+
+    private void onBoidsInitialization(BoidsInitializationMsg msg) {
+        this.nextStates.add(msg.state());
+        this.countUpdate--;
+
+        if (countUpdate == 0) {
+            log("[" + this.getSelf().path().name() + "] received " + this.nextStates.size() +  " BoidsInitializationMsg");
+            this.currentStates = new ArrayList<>(this.nextStates);
+            this.view.update(this.currentStates, FRAMERATE);
         }
     }
 
@@ -180,7 +193,6 @@ public class BoidMasterActor extends AbstractActor {
     private void onResetSimulation(ResetSimulationMsg msg) {
         log("[" + this.getSelf().path().name() + "] received ResetSimulationMsg");
         this.nStartingBoids = msg.nStartingBoids();
-        this.model.generateBoids(nStartingBoids);
 
         for (ActorRef boid : boidsActors) {
             boid.tell(PoisonPill.getInstance(), ActorRef.noSender());

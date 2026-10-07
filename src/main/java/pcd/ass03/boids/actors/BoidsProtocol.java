@@ -34,6 +34,8 @@ public interface BoidsProtocol {
 
     public static record ResetSimulationMsg(int nStartingBoids) {};
 
+    public static record BoidsInitializationMsg(BoidState state) {}
+
     public static record Tick() {}
 
     // --- Simulation Step Messages ---
